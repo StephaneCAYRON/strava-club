@@ -1,163 +1,152 @@
 import streamlit as st
-import requests
 import pandas as pd
-import time
+from db_operations import get_athlete_summary, sync_profile_and_activities, get_leaderboard_data
+from strava_operations import *
 
-from supabase import create_client, Client
 
-# Timestamp pour le 1er janvier 2026
+# APP  déployée
+# Param Strava https://www.strava.com/settings/api, callback = strava-club-challenge.streamlit.app, pour 
+# STRAVA_REDIRECT_URI = 'https://strava-club-challenge.streamlit.app'
+
+# APP  locale
+# Param Strava https://www.strava.com/settings/api,  callback = localhost
+# STRAVA_REDIRECT_URI = 'http://localhost:8501'
+
+
+# Constantes
 JAN_1_2026 = 1735689600
 
+# --- FONCTION DE MISE À JOUR UI DEPUIS LA DB ---
+def refresh_local_data():
+    if st.session_state.athlete:
+        athlete_id = st.session_state.athlete.get('id')
+        total, recent = get_athlete_summary(athlete_id)
+        st.session_state.total_activities = total
+        st.session_state.last_activities = recent
 
-# --- CONFIGURATION (Remplace par tes clés Strava) ---
-STRAVA_CLIENT_ID = st.secrets["STRAVA_CLIENT_ID"]
-STRAVA_CLIENT_SECRET = st.secrets["STRAVA_CLIENT_SECRET"]
-STRAVA_REDIRECT_URI = st.secrets["STRAVA_REDIRECT_URI"]
+st.set_page_config(page_title="Club Amicale Cyclo Escalquens 2026", page_icon="🚴", layout="wide")
 
-# Supabase
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# --- SESSION STATE ---
+for key in ['access_token', 'refresh_token', 'athlete']:
+    if key not in st.session_state:
+        st.session_state[key] = None
 
-# Initialisation Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-st.set_page_config(page_title="Club Strava", page_icon="🚴", layout="wide")
-
-# --- 2. GESTION DE LA SESSION ---
-if 'access_token' not in st.session_state:
-    st.session_state.access_token = None
-if 'refresh_token' not in st.session_state:
-    st.session_state.refresh_token = None
-if 'athlete' not in st.session_state:
-    st.session_state.athlete = None
-
-# --- 3. FONCTIONS ---
-
-def get_strava_auth_url():
-    return (f"https://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}"
-            f"&response_type=code&redirect_uri={STRAVA_REDIRECT_URI}"
-            f"&approval_prompt=force&scope=activity:read_all")
-
-def exchange_code(code):
-    res = requests.post("https://www.strava.com/oauth/token", data={
-        'client_id': STRAVA_CLIENT_ID,
-        'client_secret': STRAVA_CLIENT_SECRET,
-        'code': code,
-        'grant_type': 'authorization_code'
-    })
-    return res.json() if res.status_code == 200 else None
-
-def sync_to_supabase(athlete, activities, refresh_token):
-    try:
-        # Sauvegarde Profil
-        profile_data = {
-            "id_strava": athlete["id"],
-            "firstname": athlete.get("firstname"),
-            "lastname": athlete.get("lastname"),
-            "refresh_token": refresh_token,
-            "avatar_url": athlete.get("profile_medium")
-        }
-        supabase.table("profiles").upsert(profile_data).execute()
-
-        # Sauvegarde Activités
-        if activities:
-            formatted_activities = []
-            for a in activities:
-                formatted_activities.append({
-                    "id_activity": a["id"],
-                    "id_strava": athlete["id"],
-                    "name": a["name"],
-                    "distance_km": a["distance"] / 1000,
-                    "type": a["type"],
-                    "start_date": a["start_date"]
-                })
-            supabase.table("activities").upsert(formatted_activities).execute()
-        return True
-    except Exception as e:
-        st.error(f"Erreur de synchronisation : {e}")
-        return False
-
-# --- 4. LOGIQUE D'AUTHENTIFICATION ---
-query_params = st.query_params
-if "code" in query_params and st.session_state.access_token is None:
-    data = exchange_code(query_params["code"])
+# --- AUTH LOGIC (MODIFIÉE) ---
+if "code" in st.query_params and st.session_state.access_token is None:
+    data = exchange_code_for_token(st.query_params["code"])
     if data:
         st.session_state.access_token = data['access_token']
         st.session_state.refresh_token = data['refresh_token']
         st.session_state.athlete = data['athlete']
+        # CHARGEMENT INITIAL DEPUIS LA DB
+        refresh_local_data() 
         st.query_params.clear()
         st.rerun()
 
-# --- 5. INTERFACE UTILISATEUR ---
-st.title("🚴 Dashboard Strava & Supabase")
+# --- SESSION STATE ---
+# On ajoute 'auto_sync_done' à la liste des clés à surveiller ou on l'initialise séparément
+if 'auto_sync_done' not in st.session_state:
+    st.session_state.auto_sync_done = False
+
+# --- UI ---
+st.title("🚴 Challenge Amicale Cyclo Escalquens")
 
 if st.session_state.access_token is None:
-    st.info("Connectez-vous pour synchroniser vos données.")
     st.link_button("Se connecter avec Strava", get_strava_auth_url())
 else:
-    athlete = st.session_state.athlete
-    st.sidebar.image(athlete.get("profile_medium"), width=100)
-    st.sidebar.write(f"Salut, {athlete.get('firstname')} !")
-    
+    # possible to disconnect
     if st.sidebar.button("Déconnexion"):
         st.session_state.access_token = None
         st.rerun()
 
-    # Récupération des données ------------------- -----------------
-    headers = {'Authorization': f"Bearer {st.session_state.access_token}"}
-    res = requests.get("https://www.strava.com/api/v3/athlete/activities", headers=headers, params={'per_page': 30})
+    athlete = st.session_state.athlete
+    st.sidebar.image(athlete.get("profile_medium"), width=100)
+    st.sidebar.success(f"Connecté : {athlete.get('firstname')}")
     
-    if res.status_code == 200:
-        activities = res.json()
-        df = pd.DataFrame(activities)
-        
-        # Bouton de synchronisation
-        if st.button("🔄 Synchroniser avec la base de données"):
-            with st.spinner("Envoi vers Supabase..."):
-                if sync_to_supabase(athlete, activities, st.session_state.refresh_token):
-                    st.success("Données enregistrées !")
+    # Affichage du compteur (Information issue de la base)
+    total_db = st.session_state.get('total_activities', 0)
+    st.sidebar.metric("Activités en base", total_db)
 
-        # Affichage Local
-        if not df.empty:
-            df['distance_km'] = df['distance'] / 1000
-            st.subheader("Tes dernières sorties")
-            st.bar_chart(df, x="start_date", y="distance_km")
-            st.dataframe(df[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
+    st.sidebar.divider()
+    st.sidebar.write("Stats Strava")
+        # APPEL ET AFFICHAGE DES STATS OFFICIELLES STRAVA
+    # On récupère les deux valeurs d'un coup dans deux variables distinctes
+    result = get_strava_stats(st.session_state.access_token, athlete.get('id'))
+
+    # On vérifie si on a bien reçu un tuple de 2 éléments avant de déballer
+    if isinstance(result, tuple) and len(result) == 2:
+        stats_string, total_val = result
     else:
-        st.error("Impossible de récupérer les activités.")
+        stats_string, total_val = "Données corrompues", 0
 
-# --- 6. LEADERBOARD (BONUS) ---
+    # Affichage
+    st.sidebar.info(stats_string)
+    st.sidebar.write(f"{total_val} (🚲+🏃+🏊), {total_db-total_val} (others)")
+
+    if not st.session_state.auto_sync_done:
+        st.info(f"🔄 Mise à jour automatique...")
+        with st.spinner("Synchronisation en arrière-plan..."):
+            # On utilise ta fonction parallèle existante
+            all_activities = fetch_all_activities_parallel(st.session_state.access_token, max_pages=3)
+            
+            if all_activities:
+                success = sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
+                if success:
+                    # C'est ICI qu'on active le verrou pour empêcher la boucle au prochain rerun
+                    st.session_state.auto_sync_done = True
+                    # On rafraîchit les données locales pour mettre à jour le compteur et le graphique
+                    refresh_local_data()
+                    st.toast("✅ Données synchronisées avec succès !")
+                    st.rerun()
+
+    # BOUTON SYNCHRO (MODIFIÉ)
+    if st.sidebar.button("🚀 Forcer synchronisation (Strava -> Base)"):
+        with st.spinner("Synchronisation massive en cours..."):
+            all_activities = fetch_all_activities_parallel(st.session_state.access_token)
+            if all_activities:
+                sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
+                # MISE À JOUR APRÈS SYNCHRO
+                refresh_local_data()
+                st.success("Base de données mise à jour !")
+                st.rerun()
+    # --- AFFICHAGE (30 DERNIÈRES DE LA BASE) ---
+    if 'last_activities' in st.session_state and st.session_state.last_activities:
+        st.subheader(f"📊 Vos 30 dernières activités (sur {total_db} au total)")
+        
+        df_personal = pd.DataFrame(st.session_state.last_activities)
+        
+        # Nettoyage si les colonnes ne sont pas déjà en km dans ta base
+        if 'distance' in df_personal.columns:
+             # Si ta DB stocke en mètres comme Strava
+             df_personal['distance_km'] = df_personal['distance'] / 1000
+        else:
+             # Si ta DB stocke déjà en km (via sync_profile_and_activities)
+             df_personal['distance_km'] = df_personal['distance_km']
+
+        # Graphique et Tableau
+        st.bar_chart(df_personal, x="start_date", y="distance_km")
+        st.dataframe(df_personal[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
+
+# --- LEADERBOARD ---
 st.divider()
-st.header("🏆 Classement du Club")
+st.header("🏆 Classement général")
 
-# 1. Récupération des données avec jointure
-# On demande les km de la table activités + le prénom de la table profils liée
-response = supabase.table("activities").select("distance_km, profiles(firstname, avatar_url)").execute()
-
+response = get_leaderboard_data()
 if response.data:
-    # 2. Transformation en DataFrame
     raw_df = pd.DataFrame(response.data)
-    
-    # 3. "Aplatir" les données du profil (qui arrivent sous forme de dictionnaire)
+    # Aplatissage des données profils
     raw_df['Athlete'] = raw_df['profiles'].apply(lambda x: x['firstname'] if x else "Inconnu")
     raw_df['Photo'] = raw_df['profiles'].apply(lambda x: x['avatar_url'] if x else "")
 
-    # 4. Calcul du classement (Somme des km par athlète)
     leaderboard = raw_df.groupby(['Athlete', 'Photo'])['distance_km'].sum().sort_values(ascending=False).reset_index()
 
-    # 5. Affichage stylisé
-    cols = st.columns(len(leaderboard) if len(leaderboard) < 4 else 4)
-    
+    # Affichage des colonnes
+    cols = st.columns(min(len(leaderboard), 4))
     for i, row in leaderboard.iterrows():
         with cols[i % 4]:
-            st.image(row['Photo'], width=80)
+            st.image(row['Photo'], width=70)
             st.metric(label=f"#{i+1} {row['Athlete']}", value=f"{row['distance_km']:.1f} km")
-
-    # 6. Tableau récapitulatif
-    st.subheader("Détails des performances")
-    st.table(leaderboard[['Athlete', 'distance_km']].rename(columns={'distance_km': 'Distance Totale (km)'}))
-
 else:
+    st.info("En attente de la première synchronisation...")
 
-    st.info("Le classement est vide pour le moment. Synchronisez vos données !")
+
