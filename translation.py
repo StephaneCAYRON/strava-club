@@ -10,8 +10,9 @@ lang_dict = {
         "in_db": "Activités en base",
         "strava_stats": "Stats Strava",
         "last_activities": "📊 Vos 30 dernières activités",
+        "last_activities_test": "📊 Vos 30 dernières activités (test Altair)",
         "leaderboard": "🏆 Classement général",
-        "logout": "Déconnexion",
+        "logout": "🔓 Déconnexion",
         "auto_sync": "🔄 Mise à jour automatique...",
         "sidebar_connected": "Connecté : ",
         "main_sports":"Sports principaux : "
@@ -25,8 +26,9 @@ lang_dict = {
         "in_db": "Activities in DB",
         "strava_stats": "Strava Stats",
         "last_activities": "📊 Your 30 last activities",
+        "last_activities_test": "📊 Your 30 last activities (test Altair)",
         "leaderboard": "🏆 General Leaderboard",
-        "logout": "Logout",
+        "logout": "🔓Logout",
         "auto_sync": "🔄 Automatic update...",
         "sidebar_connected": "Connected: ",
         "main_sports":"Main sports:"
