@@ -1,9 +1,3 @@
-import streamlit as st
-import pandas as pd
-from db_operations import get_athlete_summary, sync_profile_and_activities, get_leaderboard_data
-from strava_operations import *
-
-
 # APP  déployée
 # Param Strava https://www.strava.com/settings/api, callback = strava-club-challenge.streamlit.app, pour 
 # STRAVA_REDIRECT_URI = 'https://strava-club-challenge.streamlit.app'
@@ -12,11 +6,40 @@ from strava_operations import *
 # Param Strava https://www.strava.com/settings/api,  callback = localhost
 # STRAVA_REDIRECT_URI = 'http://localhost:8501'
 
+import streamlit as st
+import pandas as pd
+from db_operations import get_athlete_summary, sync_profile_and_activities, get_leaderboard_data
+from strava_operations import *
+from translation import lang_dict  # Import de votre dictionnaire existant
 
-# Constantes
-JAN_1_2026 = 1735689600
+# --- CONFIGURATION DE LA PAGE ---
+st.set_page_config(page_title="Club Amicale Cyclo Escalquens 2026", page_icon="🚴", layout="wide")
 
-# --- FONCTION DE MISE À JOUR UI DEPUIS LA DB ---
+# --- INITIALISATION DU SESSION STATE ---
+for key in ['access_token', 'refresh_token', 'athlete', 'lang', 'auto_sync_done']:
+    if key not in st.session_state:
+        # Langue par défaut : français
+        st.session_state[key] = "fr" if key == 'lang' else (False if key == 'auto_sync_done' else None)
+
+# --- SÉLECTEUR DE LANGUE (ICONES DRAPEAUX) ---
+st.sidebar.write("Language / Langue")
+col_fr, col_en = st.sidebar.columns(2)
+
+
+with col_fr:
+    if st.button("🇫🇷 FR", use_container_width=True):
+        st.session_state.lang = "fr"
+        st.rerun()
+
+with col_en:
+    if st.button("🇬🇧 EN", use_container_width=True):
+        st.session_state.lang = "en"
+        st.rerun()
+
+# Chargement des labels correspondants
+texts = lang_dict[st.session_state.lang]
+
+# --- FONCTION DE MISE À JOUR UI ---
 def refresh_local_data():
     if st.session_state.athlete:
         athlete_id = st.session_state.athlete.get('id')
@@ -24,129 +47,98 @@ def refresh_local_data():
         st.session_state.total_activities = total
         st.session_state.last_activities = recent
 
-st.set_page_config(page_title="Club Amicale Cyclo Escalquens 2026", page_icon="🚴", layout="wide")
-
-# --- SESSION STATE ---
-for key in ['access_token', 'refresh_token', 'athlete']:
-    if key not in st.session_state:
-        st.session_state[key] = None
-
-# --- AUTH LOGIC (MODIFIÉE) ---
+# --- LOGIQUE D'AUTHENTIFICATION ---
 if "code" in st.query_params and st.session_state.access_token is None:
     data = exchange_code_for_token(st.query_params["code"])
     if data:
         st.session_state.access_token = data['access_token']
         st.session_state.refresh_token = data['refresh_token']
         st.session_state.athlete = data['athlete']
-        # CHARGEMENT INITIAL DEPUIS LA DB
         refresh_local_data() 
         st.query_params.clear()
         st.rerun()
 
-# --- SESSION STATE ---
-# On ajoute 'auto_sync_done' à la liste des clés à surveiller ou on l'initialise séparément
-if 'auto_sync_done' not in st.session_state:
-    st.session_state.auto_sync_done = False
-
-# --- UI ---
-st.title("🚴 Challenge Amicale Cyclo Escalquens")
+# --- INTERFACE PRINCIPALE ---
+st.title(texts["title"])
 
 if st.session_state.access_token is None:
-    st.link_button("Se connecter avec Strava", get_strava_auth_url())
+    st.link_button(texts["connect"], get_strava_auth_url())
 else:
-    # possible to disconnect
-    if st.sidebar.button("Déconnexion"):
-        st.session_state.access_token = None
-        st.rerun()
-
     athlete = st.session_state.athlete
     st.sidebar.image(athlete.get("profile_medium"), width=100)
-    st.sidebar.success(f"Connecté : {athlete.get('firstname')}")
-    
-    # Affichage du compteur (Information issue de la base)
-    total_db = st.session_state.get('total_activities', 0)
-    st.sidebar.metric("Activités en base", total_db)
+    st.sidebar.success(f"{texts['sidebar_connected']} {athlete.get('firstname')}")
 
-    st.sidebar.divider()
-    st.sidebar.write("Stats Strava")
-        # APPEL ET AFFICHAGE DES STATS OFFICIELLES STRAVA
-    # On récupère les deux valeurs d'un coup dans deux variables distinctes
-    result = get_strava_stats(st.session_state.access_token, athlete.get('id'))
+    # BOUTON DÉCONNEXION
+    if st.sidebar.button(texts["logout"]):
+        st.session_state.access_token = None
+        st.session_state.auto_sync_done = False
+        st.rerun()
 
-    # On vérifie si on a bien reçu un tuple de 2 éléments avant de déballer
-    if isinstance(result, tuple) and len(result) == 2:
-        stats_string, total_val = result
-    else:
-        stats_string, total_val = "Données corrompues", 0
-
-    # Affichage
-    st.sidebar.info(stats_string)
-    st.sidebar.write(f"{total_val} (🚲+🏃+🏊), {total_db-total_val} (others)")
-
-    if not st.session_state.auto_sync_done:
-        st.info(f"🔄 Mise à jour automatique...")
-        with st.spinner("Synchronisation en arrière-plan..."):
-            # On utilise ta fonction parallèle existante
-            all_activities = fetch_all_activities_parallel(st.session_state.access_token, max_pages=3)
-            
-            if all_activities:
-                success = sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
-                if success:
-                    # C'est ICI qu'on active le verrou pour empêcher la boucle au prochain rerun
-                    st.session_state.auto_sync_done = True
-                    # On rafraîchit les données locales pour mettre à jour le compteur et le graphique
-                    refresh_local_data()
-                    st.toast("✅ Données synchronisées avec succès !")
-                    st.rerun()
-
-    # BOUTON SYNCHRO (MODIFIÉ)
-    if st.sidebar.button("🚀 Forcer synchronisation (Strava -> Base)"):
-        with st.spinner("Synchronisation massive en cours..."):
+    # BOUTON SYNCHRO MANUELLE
+    if st.sidebar.button(texts["sync_btn"]):
+        with st.spinner(texts["sync_spinner"]):
             all_activities = fetch_all_activities_parallel(st.session_state.access_token)
             if all_activities:
                 sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
-                # MISE À JOUR APRÈS SYNCHRO
                 refresh_local_data()
-                st.success("Base de données mise à jour !")
+                st.sidebar.success(texts["sync_success"])
                 st.rerun()
-    # --- AFFICHAGE (30 DERNIÈRES DE LA BASE) ---
-    if 'last_activities' in st.session_state and st.session_state.last_activities:
-        st.subheader(f"📊 Vos 30 dernières activités (sur {total_db} au total)")
+
+    # --- LOGIQUE DE SYNCHRONISATION OPTIMISÉE ---
+    if not st.session_state.auto_sync_done:
+        with st.spinner(texts["auto_sync"]):
+            # 1. On récupère uniquement les 100 plus récentes
+            # st.info(texts["auto_sync"])
+            latest_activities = fetch_page(st.session_state.access_token, page=1, per_page=100)
+            if latest_activities:
+                sync_profile_and_activities(athlete, latest_activities, st.session_state.refresh_token)
+                refresh_local_data() 
+                
+        # 2. Si la base est quasi vide, on lance l'historique complet
+        total_db = st.session_state.get('total_activities', 0)
+        if total_db <= 100:
+            with st.spinner(texts["sync_spinner"]):
+                all_history = fetch_all_activities_parallel(st.session_state.access_token, max_pages=20)
+                if all_history:
+                    sync_profile_and_activities(athlete, all_history, st.session_state.refresh_token)
+                    refresh_local_data()
         
+        st.session_state.auto_sync_done = True
+        st.rerun()
+
+    # --- STATS MACROS ---
+    total_db = st.session_state.get('total_activities', 0)
+    
+    result = get_strava_stats(st.session_state.access_token, athlete.get('id'))
+    if isinstance(result, tuple) and len(result) == 2:
+        stats_string, total_strava = result
+        st.info(f"{stats_string}, total: {total_db}")
+    
+    # --- AFFICHAGE DES ACTIVITÉS PERSONNELLES ---
+    if 'last_activities' in st.session_state and st.session_state.last_activities:
+        st.subheader(texts["last_activities"])
         df_personal = pd.DataFrame(st.session_state.last_activities)
         
-        # Nettoyage si les colonnes ne sont pas déjà en km dans ta base
-        if 'distance' in df_personal.columns:
-             # Si ta DB stocke en mètres comme Strava
+        if 'distance_km' not in df_personal.columns and 'distance' in df_personal.columns:
              df_personal['distance_km'] = df_personal['distance'] / 1000
-        else:
-             # Si ta DB stocke déjà en km (via sync_profile_and_activities)
-             df_personal['distance_km'] = df_personal['distance_km']
 
-        # Graphique et Tableau
         st.bar_chart(df_personal, x="start_date", y="distance_km")
         st.dataframe(df_personal[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
 
 # --- LEADERBOARD ---
 st.divider()
-st.header("🏆 Classement général")
+st.header(texts["leaderboard"])
 
 response = get_leaderboard_data()
 if response.data:
     raw_df = pd.DataFrame(response.data)
-    # Aplatissage des données profils
-    raw_df['Athlete'] = raw_df['profiles'].apply(lambda x: x['firstname'] if x else "Inconnu")
+    raw_df['Athlete'] = raw_df['profiles'].apply(lambda x: x['firstname'] if x else "???")
     raw_df['Photo'] = raw_df['profiles'].apply(lambda x: x['avatar_url'] if x else "")
 
     leaderboard = raw_df.groupby(['Athlete', 'Photo'])['distance_km'].sum().sort_values(ascending=False).reset_index()
 
-    # Affichage des colonnes
     cols = st.columns(min(len(leaderboard), 4))
     for i, row in leaderboard.iterrows():
         with cols[i % 4]:
             st.image(row['Photo'], width=70)
             st.metric(label=f"#{i+1} {row['Athlete']}", value=f"{row['distance_km']:.1f} km")
-else:
-    st.info("En attente de la première synchronisation...")
-
-

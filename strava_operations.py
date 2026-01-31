@@ -3,6 +3,7 @@ import requests
 import urllib.parse
 import concurrent.futures
 import requests
+from translation import lang_dict  # Import de votre dictionnaire existant
 
 STRAVA_CLIENT_ID = st.secrets["STRAVA_CLIENT_ID"]
 STRAVA_CLIENT_SECRET = st.secrets["STRAVA_CLIENT_SECRET"]
@@ -90,7 +91,8 @@ def get_strava_stats(access_token, athlete_id):
             swims = data.get('all_swim_totals', {}).get('count', 0)
             
             total_val = rides + runs + swims
-            stats_string = f"Total : {total_val} (🚲 {rides} | 🏃 {runs} | 🏊 {swims})"
+            texts = lang_dict[st.session_state.lang]
+            stats_string = f"{texts['main_sports']}{total_val} (🚲 {rides} | 🏃 {runs} | 🏊 {swims})"
             
             # ON RENVOIE EXACTEMENT DEUX ÉLÉMENTS
             return stats_string, total_val
