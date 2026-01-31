@@ -40,6 +40,13 @@ def get_leaderboard_data():
     """Récupère les données consolidées pour le classement."""
     return supabase.table("activities").select("distance_km, type, start_date, profiles(firstname, avatar_url)").execute()
 
+def get_leaderboard_by_group(group_id):
+    """Récupère les données du leaderboard uniquement pour un groupe spécifique"""
+    # On utilise la vue 'group_activities' créée en SQL
+    return supabase.table("group_activities")\
+        .select("firstname, avatar_url, distance_km")\
+        .eq("group_id", group_id).execute()
+
 def get_athlete_summary(athlete_id):
     """Récupère le nombre total d'activités et les 30 plus récentes."""
     # 1. Compter le total
@@ -55,5 +62,55 @@ def get_athlete_summary(athlete_id):
         .limit(30) \
         .execute()
     return total_count, activities_res.data
+
+
+# --- GESTION DES GROUPES ---
+
+def create_group(name, admin_id):
+    """Crée un nouveau groupe dont l'admin est l'utilisateur actuel"""
+    data = {"name": name, "admin_id": admin_id}
+    # On insère le groupe et on ajoute automatiquement l'admin comme membre approuvé
+    response = supabase.table("groups").insert(data).execute()
+    if response.data:
+        group_id = response.data[0]['id']
+        supabase.table("group_members").insert({
+            "group_id": group_id,
+            "athlete_id": admin_id,
+            "status": "approved"
+        }).execute()
+    return response
+
+def get_all_groups():
+    """Récupère la liste de tous les groupes disponibles"""
+    return supabase.table("groups").select("*").execute()
+
+def get_user_memberships(athlete_id):
+    """Récupère les groupes auxquels l'utilisateur appartient (approuvé ou non)"""
+    return supabase.table("group_members")\
+        .select("group_id, status, groups(name)")\
+        .eq("athlete_id", athlete_id).execute()
+
+def request_to_join_group(group_id, athlete_id):
+    """Envoie une demande d'adhésion à un groupe"""
+    data = {"group_id": group_id, "athlete_id": athlete_id, "status": "pending"}
+    return supabase.table("group_members").insert(data).execute()
+
+def get_pending_requests_for_admin(admin_id):
+    """Récupère les demandes en attente pour les groupes gérés par cet admin"""
+    # On cherche les groupes où l'utilisateur est admin
+    admin_groups = supabase.table("groups").select("id").eq("admin_id", admin_id).execute()
+    group_ids = [g['id'] for g in admin_groups.data]
+    
+    if not group_ids:
+        return []
+
+    return supabase.table("group_members")\
+        .select("id, status, groups(name), profiles(firstname)")\
+        .in_("group_id", group_ids)\
+        .eq("status", "pending").execute()
+
+def update_membership_status(membership_id, status="approved"):
+    """Approuve ou refuse un membre"""
+    return supabase.table("group_members").update({"status": status}).eq("id", membership_id).execute()
 
 
