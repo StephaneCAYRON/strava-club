@@ -18,10 +18,13 @@ lang_dict = {
         "main_sports":"Sports principaux : ",
         "group_section": "👥 Groupes",
         "create_group": "Créer un groupe",
+        "group_name": "group_name",
         "join_group": "Rejoindre un groupe",
         "pending_requests": "Demandes en attente",
         "my_groups": "Mes groupes",
-        "no_group": "Vous n'êtes membre d'aucun groupe."
+        "no_group": "Vous n'êtes membre d'aucun groupe.",
+        "leaderboard_tab": "leaderboard_tab",
+        "group_tab":"group_tab",
     },
     "en": {
         "title": "🚴 Amicale Cyclo Escalquens Challenge",
@@ -40,9 +43,12 @@ lang_dict = {
         "main_sports":"Main sports:",
         "group_section": "👥 Groups",
         "create_group": "Create a group",
+        "group_name": "group_name",
         "join_group": "Join a group",
         "pending_requests": "Pending group requests",
         "my_groups": "My groups",
-        "no_group": "Your not a member of any group."
+        "no_group": "Your not a member of any group.",
+        "leaderboard_tab": "leaderboard_tab",
+        "group_tab":"group_tab",
     }
 }

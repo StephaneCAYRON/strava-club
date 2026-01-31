@@ -8,7 +8,7 @@
 
 import streamlit as st
 import pandas as pd
-from db_operations import get_athlete_summary, sync_profile_and_activities, get_leaderboard_data
+from db_operations import *
 from strava_operations import *
 from translation import lang_dict  # Import de votre dictionnaire existant
 import altair as alt #
@@ -115,55 +115,119 @@ else:
         stats_string, total_strava = result
         st.info(f"{stats_string}, total: {total_db}")
     
-    # --- AFFICHAGE DES ACTIVITÉS PERSONNELLES ---
-    if 'last_activities' in st.session_state and st.session_state.last_activities:
-        st.subheader(texts["last_activities"])
-        df_personal = pd.DataFrame(st.session_state.last_activities)
-        
-        if 'distance_km' not in df_personal.columns and 'distance' in df_personal.columns:
-             df_personal['distance_km'] = df_personal['distance'] / 1000
+    # --- TABS PRINCIPAUX ---
+    tab_leader, tab_groups, tab_stats = st.tabs([texts["leaderboard_tab"], texts["group_tab"], "Ma progression"])
 
-        st.bar_chart(df_personal, x="start_date", y="distance_km")
-        st.dataframe(df_personal[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
+    with tab_stats:
 
-    # --- AFFICHAGE DES ACTIVITÉS PERSONNELLES ---
-    if 'last_activities' in st.session_state and st.session_state.last_activities:
-        st.subheader(texts["last_activities_test"])
-        df_personal = pd.DataFrame(st.session_state.last_activities)
-        
-        if 'distance_km' not in df_personal.columns and 'distance' in df_personal.columns:
-            df_personal['distance_km'] = df_personal['distance'] / 1000
+        # --- AFFICHAGE DES ACTIVITÉS PERSONNELLES ---
+        if 'last_activities' in st.session_state and st.session_state.last_activities:
+            st.subheader(texts["last_activities"])
+            df_personal = pd.DataFrame(st.session_state.last_activities)
+            
+            if 'distance_km' not in df_personal.columns and 'distance' in df_personal.columns:
+                df_personal['distance_km'] = df_personal['distance'] / 1000
 
-        # Construction de l'URL Strava pour chaque activité
-        # L'ID de l'activité est récupéré depuis la base de données
-        df_personal['strava_url'] = "https://www.strava.com/activities/" + df_personal['id_activity'].astype(str)
+            st.bar_chart(df_personal, x="start_date", y="distance_km")
+            st.dataframe(df_personal[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
+            
+            # --- AFFICHAGE DES ACTIVITÉS PERSONNELLES BIS---
+            st.subheader(texts["last_activities_test"])
+            df_personal = pd.DataFrame(st.session_state.last_activities)
+            
+            if 'distance_km' not in df_personal.columns and 'distance' in df_personal.columns:
+                df_personal['distance_km'] = df_personal['distance'] / 1000
 
-        # Création du graphique Altair
-        chart = alt.Chart(df_personal).mark_bar(
-            cursor='pointer',
-        ).encode(
-            x=alt.X('start_date:T', title='Date'),
-            y=alt.Y('distance_km:Q', title='Distance (km)'),
-            href='strava_url:N',
-            tooltip=[
-                alt.Tooltip('name:N', title='Nom'),
-                alt.Tooltip('distance_km:Q', title='Distance (km)', format='.1f'),
-                alt.Tooltip('type:N', title='Sport'),
-                alt.Tooltip('start_date:T', title='Date', format='%Y-%m-%d') 
-            ]
-        ).properties(
-            height=400
-        ).configure_mark(
-            # C'est cette option qui force l'ouverture dans un nouvel onglet
-            invalid=None
-        ).configure_view(
-            stroke=None
-        ).interactive()
+            # Construction de l'URL Strava pour chaque activité
+            # L'ID de l'activité est récupéré depuis la base de données
+            df_personal['strava_url'] = "https://www.strava.com/activities/" + df_personal['id_activity'].astype(str)
 
-        st.altair_chart(chart, use_container_width=True)
+            # Création du graphique Altair
+            chart = alt.Chart(df_personal).mark_bar(
+                cursor='pointer',
+            ).encode(
+                x=alt.X('start_date:T', title='Date'),
+                y=alt.Y('distance_km:Q', title='Distance (km)'),
+                href='strava_url:N',
+                tooltip=[
+                    alt.Tooltip('name:N', title='Nom'),
+                    alt.Tooltip('distance_km:Q', title='Distance (km)', format='.1f'),
+                    alt.Tooltip('type:N', title='Sport'),
+                    alt.Tooltip('start_date:T', title='Date', format='%Y-%m-%d') 
+                ]
+            ).properties(
+                height=400
+            ).configure_mark(
+                # C'est cette option qui force l'ouverture dans un nouvel onglet
+                invalid=None
+            ).configure_view(
+                stroke=None
+            ).interactive()
+
+            st.altair_chart(chart, use_container_width=True)
         
         # Tableau récapitulatif en dessous
         st.dataframe(df_personal[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
+
+
+
+    with tab_groups:
+        col_list, col_admin = st.columns(2)
+        
+        with col_list:
+            st.subheader(texts["my_groups"])
+            m_groups = get_user_memberships(athlete['id'])
+            if m_groups.data:
+                for g in m_groups.data:
+                    st.write(f"- {g['groups']['name']} ({g['status']})")
+            
+            st.divider()
+            st.subheader(texts["join_group"])
+            all_g = get_all_groups()
+            if all_g.data:
+                g_to_join = st.selectbox(texts["group_name"], options=all_g.data, format_func=lambda x: x['name'])
+                if st.button(texts["join_group"]):
+                    request_to_join_group(g_to_join['id'], athlete['id'])
+                    st.success(texts["request_sent"])
+
+        with col_admin:
+            st.subheader(texts["create_group"])
+            new_g_name = st.text_input(texts["group_name"], key="new_g")
+            if st.button(texts["create_group"]):
+                create_group(new_g_name, athlete['id'])
+                st.rerun()
+
+            st.divider()
+            st.subheader(texts["pending_requests"])
+            pending = get_pending_requests_for_admin(athlete['id'])
+            if pending:
+                for p in pending.data:
+                    c1, c2 = st.columns([2,1])
+                    c1.write(f"{p['profiles']['firstname']} -> {p['groups']['name']}")
+                    if c2.button(texts["approve"], key=p['id']):
+                        update_membership_status(p['id'], "approved")
+                        st.rerun()
+
+    with tab_leader:
+        # Sélecteur de groupe pour le leaderboard
+        my_approved = [g for g in m_groups.data if g['status'] == 'approved']
+        if my_approved:
+            selected_g = st.selectbox("Sélectionner un groupe", my_approved, format_func=lambda x: x['groups']['name'])
+            res = get_leaderboard_by_group(selected_g['group_id'])
+            if res.data:
+                ld_df = pd.DataFrame(res.data).groupby(['firstname', 'avatar_url'])['distance_km'].sum().sort_values(ascending=False).reset_index()
+                cols = st.columns(4)
+                for i, row in ld_df.iterrows():
+                    with cols[i % 4]:
+                        st.image(row['avatar_url'], width=60)
+                        st.metric(f"#{i+1} {row['firstname']}", f"{row['distance_km']:.1f} km")
+        else:
+            st.info(texts["no_group"])   
+
+
+    
+
+    
 
 
 # --- LEADERBOARD ---
