@@ -203,12 +203,6 @@ def render_tab_leaderboard(texts):
             title_suffix = f"{selected_period} {selected_year}"
             is_global_view = False
 
-        st.write(f"---------------DEBUG DF_FINAL: {len(df_final)} lignes trouvées")
-        st.write(f"Athlètes présents: {df_final['firstname'].unique()}")
-        st.write(f"---------------DEBUG DF_YEAR: {len(df_year)} lignes trouvées")
-        st.write(f"Athlètes présents: {df_year['firstname'].unique()}")
-        
-
         # --- CLASSEMENT (AGGRÉGATION MULTIPLE) ---
         # On utilise .agg pour calculer la somme des km ET compter le nombre d'activités
         leaderboard = df_final.groupby(['firstname', 'avatar_url']).agg(
