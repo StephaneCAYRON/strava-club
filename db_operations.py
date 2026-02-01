@@ -66,6 +66,7 @@ def get_leaderboard_by_group_by_year(group_id, year):
     return supabase.table("group_activities")\
         .select("*")\
         .eq("group_id", group_id)\
+        .eq("type", "Ride")\
         .gte("start_date", start_date)\
         .lte("start_date", end_date)\
         .limit(5000)\
