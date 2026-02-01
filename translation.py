@@ -9,8 +9,8 @@ lang_dict = {
         "sync_success": "Base de données mise à jour !",
         "in_db": "Activités en base",
         "strava_stats": "Stats Strava",
-        "last_activities": "📊 Vos 30 dernières activités",
-        "last_activities_test": "📊 Vos 30 dernières activités (test Altair)",
+        "last_activities": "📊 Vos dernières activités",
+        "last_activities_test": "📊 Vos dernières activités (test Altair)",
         "leaderboard": "🏆 Classement général",
         "logout": "🔓 Déconnexion",
         "auto_sync": "🔄 Mise à jour automatique...",
@@ -28,6 +28,8 @@ lang_dict = {
         "tab_statsPerso":"Ma progression",
         "request_sent" : "Demande envoyée",
         "approve" : "Approuver",
+        "all_year": "Toute l'année",
+        "rides": "sorties",
     },
     "en": {
         "title": "🚴 Amicale Cyclo Escalquens Challenge",
@@ -37,8 +39,8 @@ lang_dict = {
         "sync_success": "Database updated!",
         "in_db": "Activities in DB",
         "strava_stats": "Strava Stats",
-        "last_activities": "📊 Your 30 last activities",
-        "last_activities_test": "📊 Your 30 last activities (test Altair)",
+        "last_activities": "📊 Your last activities",
+        "last_activities_test": "📊 Your last activities (test Altair)",
         "leaderboard": "🏆 General Leaderboard",
         "logout": "🔓Logout",
         "auto_sync": "🔄 Automatic update...",
@@ -56,5 +58,7 @@ lang_dict = {
         "tab_statsPerso":"My progression",
         "request_sent" : "Request sent",
         "approve" : "Approve",
+        "all_year": "Full Year",
+        "rides": "rides",
     }
 }

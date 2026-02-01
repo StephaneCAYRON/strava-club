@@ -40,7 +40,16 @@ def get_leaderboard_data():
     """Récupère les données consolidées pour le classement."""
     return supabase.table("activities").select("distance_km, type, start_date, profiles(firstname, avatar_url)").execute()
 
+
 def get_leaderboard_by_group(group_id):
+    """Récupère les activités Ride pour un groupe, incluant la date pour le tri"""
+    return supabase.table("group_activities")\
+        .select("firstname, avatar_url, distance_km, start_date, type")\
+        .eq("group_id", group_id)\
+        .eq("type", "Ride")\
+        .execute() # On filtre directement 'Ride' ici pour alléger le transfert
+
+def get_leaderboard_by_group_old(group_id):
     """Récupère les données du leaderboard uniquement pour un groupe spécifique"""
     # On utilise la vue 'group_activities' créée en SQL
     return supabase.table("group_activities")\
@@ -54,12 +63,12 @@ def get_athlete_summary(athlete_id):
     count_res = supabase.table("activities").select("*", count="exact").eq("id_strava", athlete_id).execute()
     total_count = count_res.count if count_res else 0
     
-    # 2. Récupérer les 30 dernières
+    # 2. Récupérer les N dernières
     activities_res = supabase.table("activities") \
         .select("*") \
         .eq("id_strava", athlete_id) \
         .order("start_date", desc=True) \
-        .limit(30) \
+        .limit(100) \
         .execute()
     return total_count, activities_res.data
 
