@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from supabase import create_client, Client
 
 # Initialisation (utilisée en interne)
@@ -41,20 +42,43 @@ def get_leaderboard_data():
     return supabase.table("activities").select("distance_km, type, start_date, profiles(firstname, avatar_url)").execute()
 
 
+
+def get_years_for_group(group_id):
+    """Récupère les années distinctes pour un groupe spécifique"""
+    # On ne sélectionne que la colonne start_date pour être léger
+    response = supabase.table("group_activities")\
+        .select("start_date")\
+        .eq("group_id", group_id)\
+        .execute()
+    
+    if response.data:
+        # Extraction des années uniques avec Pandas ou set comprehension
+        df = pd.DataFrame(response.data)
+        df['year'] = pd.to_datetime(df['start_date']).dt.year
+        return sorted(df['year'].unique().tolist(), reverse=True)
+    return []
+
+# Option plus performante si vous avez des milliers d'activités
+def get_leaderboard_by_group_by_year(group_id, year):
+    start_date = f"{year}-01-01"
+    end_date = f"{year}-12-31"
+    
+    return supabase.table("group_activities")\
+        .select("*")\
+        .eq("group_id", group_id)\
+        .gte("start_date", start_date)\
+        .lte("start_date", end_date)\
+        .limit(5000)\
+        .execute()
+
 def get_leaderboard_by_group(group_id):
     """Récupère les activités Ride pour un groupe, incluant la date pour le tri"""
     return supabase.table("group_activities")\
         .select("firstname, avatar_url, distance_km, start_date, type")\
         .eq("group_id", group_id)\
         .eq("type", "Ride")\
+        .limit(5000)\
         .execute() # On filtre directement 'Ride' ici pour alléger le transfert
-
-def get_leaderboard_by_group_old(group_id):
-    """Récupère les données du leaderboard uniquement pour un groupe spécifique"""
-    # On utilise la vue 'group_activities' créée en SQL
-    return supabase.table("group_activities")\
-        .select("firstname, avatar_url, distance_km")\
-        .eq("group_id", group_id).execute()
 
 def get_athlete_summary(athlete_id):
     """Récupère le nombre total d'activités et les 30 plus récentes."""

@@ -159,24 +159,31 @@ def render_tab_leaderboard(texts):
         format_func=lambda x: x['groups']['name']
     )
 
-    res = get_leaderboard_by_group(selected_g['group_id'])
+    # --- FILTRES UI ---
+    col_filter1, col_filter2 = st.columns(2)
+
+    years = get_years_for_group(selected_g['group_id'])
+    if years:
+        selected_year = col_filter1.selectbox("Année", years)
+    else:
+        selected_year = 2026 # Valeur par défaut
+
+    res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
     
     if res.data:
         df = pd.DataFrame(res.data)
         
         # Traitement Date
         df['start_date'] = pd.to_datetime(df['start_date'])
-        df['Année'] = df['start_date'].dt.year
+        df['Year'] = df['start_date'].dt.year
         df['Mois'] = df['start_date'].dt.month_name()
         df['Mois_Num'] = df['start_date'].dt.month
+    
+        #available_years = sorted(df['Year'].unique(), reverse=True)
+        #selected_year = col_filter1.selectbox("Année", available_years)
+        
+        df_year = df[df['Year'] == selected_year]
 
-        # --- FILTRES UI ---
-        col_filter1, col_filter2 = st.columns(2)
-        
-        available_years = sorted(df['Année'].unique(), reverse=True)
-        selected_year = col_filter1.selectbox("Année", available_years)
-        
-        df_year = df[df['Année'] == selected_year]
         months_in_data = df_year.sort_values('Mois_Num')['Mois'].unique().tolist()
         
         option_all = texts["all_year"]
@@ -195,6 +202,12 @@ def render_tab_leaderboard(texts):
             df_final = df_year[df_year['Mois'] == selected_period]
             title_suffix = f"{selected_period} {selected_year}"
             is_global_view = False
+
+        st.write(f"---------------DEBUG DF_FINAL: {len(df_final)} lignes trouvées")
+        st.write(f"Athlètes présents: {df_final['firstname'].unique()}")
+        st.write(f"---------------DEBUG DF_YEAR: {len(df_year)} lignes trouvées")
+        st.write(f"Athlètes présents: {df_year['firstname'].unique()}")
+        
 
         # --- CLASSEMENT (AGGRÉGATION MULTIPLE) ---
         # On utilise .agg pour calculer la somme des km ET compter le nombre d'activités
