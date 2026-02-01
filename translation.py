@@ -23,8 +23,11 @@ lang_dict = {
         "pending_requests": "Demandes en attente",
         "my_groups": "Mes groupes",
         "no_group": "Vous n'êtes membre d'aucun groupe.",
-        "leaderboard_tab": "leaderboard_tab",
-        "group_tab":"group_tab",
+        "leaderboard_tab": "Classement",
+        "group_tab":"Mes groupes",
+        "tab_statsPerso":"Ma progression",
+        "request_sent" : "Demande envoyée",
+        "approve" : "Approuver",
     },
     "en": {
         "title": "🚴 Amicale Cyclo Escalquens Challenge",
@@ -50,5 +53,8 @@ lang_dict = {
         "no_group": "Your not a member of any group.",
         "leaderboard_tab": "leaderboard_tab",
         "group_tab":"group_tab",
+        "tab_statsPerso":"My progression",
+        "request_sent" : "Request sent",
+        "approve" : "Approve",
     }
 }

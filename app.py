@@ -116,7 +116,7 @@ else:
         st.info(f"{stats_string}, total: {total_db}")
     
     # --- TABS PRINCIPAUX ---
-    tab_leader, tab_groups, tab_stats = st.tabs([texts["leaderboard_tab"], texts["group_tab"], "Ma progression"])
+    tab_stats , tab_leader, tab_groups = st.tabs([texts["tab_statsPerso"], texts["leaderboard_tab"], texts["group_tab"]])
 
     with tab_stats:
 
@@ -169,44 +169,70 @@ else:
         # Tableau récapitulatif en dessous
         st.dataframe(df_personal[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
 
-
-
     with tab_groups:
-        col_list, col_admin = st.columns(2)
+        col_list, col_admin = st.columns([1, 1], gap="large")
         
         with col_list:
             st.subheader(texts["my_groups"])
             m_groups = get_user_memberships(athlete['id'])
             if m_groups.data:
                 for g in m_groups.data:
-                    st.write(f"- {g['groups']['name']} ({g['status']})")
+                    status_icon = "✅" if g['status'] == 'approved' else "⏳"
+                    st.write(f"{status_icon} **{g['groups']['name']}** ({g['status']})")
+            else:
+                st.info(texts["no_group"])
             
             st.divider()
             st.subheader(texts["join_group"])
             all_g = get_all_groups()
             if all_g.data:
-                g_to_join = st.selectbox(texts["group_name"], options=all_g.data, format_func=lambda x: x['name'])
-                if st.button(texts["join_group"]):
-                    request_to_join_group(g_to_join['id'], athlete['id'])
-                    st.success(texts["request_sent"])
+                # On exclut les groupes dont l'utilisateur est déjà membre pour épurer la liste
+                already_member_ids = [g['group_id'] for g in m_groups.data]
+                available_groups = [g for g in all_g.data if g['id'] not in already_member_ids]
+                
+                if available_groups:
+                    g_to_join = st.selectbox(texts["group_name"], options=available_groups, format_func=lambda x: x['name'])
+                    if st.button(texts["join_group"], use_container_width=True):
+                        request_to_join_group(g_to_join['id'], athlete['id'])
+                        st.success(texts["request_sent"])
+                        st.rerun()
+                else:
+                    st.write("Vous avez rejoint tous les groupes disponibles !")
 
         with col_admin:
-            st.subheader(texts["create_group"])
-            new_g_name = st.text_input(texts["group_name"], key="new_g")
-            if st.button(texts["create_group"]):
-                create_group(new_g_name, athlete['id'])
-                st.rerun()
-
-            st.divider()
-            st.subheader(texts["pending_requests"])
-            pending = get_pending_requests_for_admin(athlete['id'])
-            if pending:
-                for p in pending.data:
-                    c1, c2 = st.columns([2,1])
-                    c1.write(f"{p['profiles']['firstname']} -> {p['groups']['name']}")
-                    if c2.button(texts["approve"], key=p['id']):
-                        update_membership_status(p['id'], "approved")
+            # 1. Création de groupe (accessible à tous)
+            with st.expander(f"➕ {texts['create_group']}"):
+                new_g_name = st.text_input(texts["group_name"], key="new_g")
+                if st.button(texts["create_group"], use_container_width=True):
+                    if new_g_name:
+                        create_group(new_g_name, athlete['id'])
+                        st.toast(f"Groupe {new_g_name} créé !")
                         st.rerun()
+
+            st.write("") # Espacement
+
+            # 2. Zone d'administration (visible uniquement si l'utilisateur gère des groupes)
+            pending = get_pending_requests_for_admin(athlete['id'])
+            
+            # On vérifie si l'utilisateur est admin de groupes (même s'il n'y a pas de requêtes)
+            # pour afficher le panneau de gestion
+            if pending or any(g['status'] == 'approved' for g in m_groups.data): 
+                st.markdown("### 🛠 Espace Administration")
+                with st.container(border=True):
+                    st.caption("Gestion des adhésions")
+                    
+                    if pending and pending.data:
+                        st.info(f"Il y a {len(pending.data)} demande(s) en attente")
+                        for p in pending.data:
+                            with st.container():
+                                c1, c2 = st.columns([2, 1])
+                                c1.markdown(f"**{p['profiles']['firstname']}** souhaite rejoindre *{p['groups']['name']}*")
+                                if c2.button(texts["approve"], key=p['id'], type="primary", use_container_width=True):
+                                    update_membership_status(p['id'], "approved")
+                                    st.rerun()
+                                st.divider()
+                    else:
+                        st.write("Aucune demande d'adhésion en attente.")
 
     with tab_leader:
         # Sélecteur de groupe pour le leaderboard
@@ -223,27 +249,3 @@ else:
                         st.metric(f"#{i+1} {row['firstname']}", f"{row['distance_km']:.1f} km")
         else:
             st.info(texts["no_group"])   
-
-
-    
-
-    
-
-
-# --- LEADERBOARD ---
-st.divider()
-st.header(texts["leaderboard"])
-
-response = get_leaderboard_data()
-if response.data:
-    raw_df = pd.DataFrame(response.data)
-    raw_df['Athlete'] = raw_df['profiles'].apply(lambda x: x['firstname'] if x else "???")
-    raw_df['Photo'] = raw_df['profiles'].apply(lambda x: x['avatar_url'] if x else "")
-
-    leaderboard = raw_df.groupby(['Athlete', 'Photo'])['distance_km'].sum().sort_values(ascending=False).reset_index()
-
-    cols = st.columns(min(len(leaderboard), 4))
-    for i, row in leaderboard.iterrows():
-        with cols[i % 4]:
-            st.image(row['Photo'], width=70)
-            st.metric(label=f"#{i+1} {row['Athlete']}", value=f"{row['distance_km']:.1f} km")
