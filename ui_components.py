@@ -99,25 +99,26 @@ def render_tab_groups(texts):
                     st.rerun()
 
     with col_admin:
-        with st.expander(f"➕ {texts['create_group']}"):
-            name = st.text_input(texts["group_name"], key="new_g")
-            if st.button(texts["create_group"], use_container_width=True):
-                create_group(name, athlete['id'])
-                st.rerun()
-
-        pending = get_pending_requests_for_admin(athlete['id'])
-        if pending or any(g['status'] == 'approved' for g in m_groups.data):
+        if False: #desactivation pour l'instant
             st.markdown("### 🛠 Espace Administration")
-            with st.container(border=True):
-                if pending and pending.data:
-                    for p in pending.data:
-                        c1, c2 = st.columns([2, 1])
-                        c1.write(f"**{p['profiles']['firstname']}** -> {p['groups']['name']}")
-                        if c2.button(texts["approve"], key=p['id'], type="primary"):
-                            update_membership_status(p['id'], "approved")
-                            st.rerun()
-                else:
-                    st.write("Aucune demande en attente.")
+            with st.expander(f"➕ {texts['create_group']}"):
+                name = st.text_input(texts["group_name"], key="new_g")
+                if st.button(texts["create_group"], use_container_width=True):
+                    create_group(name, athlete['id'])
+                    st.rerun()
+            pending = get_pending_requests_for_admin(athlete['id'])
+            if pending or any(g['status'] == 'approved' for g in m_groups.data):
+                
+                with st.container(border=True):
+                    if pending and pending.data:
+                        for p in pending.data:
+                            c1, c2 = st.columns([2, 1])
+                            c1.write(f"**{p['profiles']['firstname']}** -> {p['groups']['name']}")
+                            if c2.button(texts["approve"], key=p['id'], type="primary"):
+                                update_membership_status(p['id'], "approved")
+                                st.rerun()
+                    else:
+                        st.write("Aucune demande en attente.")
 
 def render_tab_leaderboard_old(texts):
     """Contenu de l'onglet Leaderboard."""
