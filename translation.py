@@ -2,7 +2,7 @@
 
 lang_dict = {
     "fr": {
-        "title": "🚴 Challenge Amicale Cyclo Escalquens",
+        "title": "🚴 Challenge Amicale Cyclo Escalquens (ALPHA version...)",
         "connect": "Se connecter avec Strava",
         "sync_btn": "🚀 Forcer synchronisation complète depuis Strava",
         "sync_spinner": "Synchronisation complète en cours...",
@@ -32,7 +32,7 @@ lang_dict = {
         "rides": "sorties",
     },
     "en": {
-        "title": "🚴 Amicale Cyclo Escalquens Challenge",
+        "title": "🚴 Challenge Amicale Cyclo Escalquens (ALPHA version...)",
         "connect": "Connect with Strava",
         "sync_btn": "🚀 Force full synchronization from Strava",
         "sync_spinner": "Complete sync in progress...",

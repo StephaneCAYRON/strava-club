@@ -8,18 +8,19 @@ def sidebar_component(texts):
     """Gère l'affichage et les actions de la barre latérale."""
     
     # --- SÉLECTEUR DE LANGUE (ICONES DRAPEAUX) ---
-    st.sidebar.write("Language / Langue")
-    col_fr, col_en = st.sidebar.columns(2)
-    with col_fr:
-        if st.button("FR", use_container_width=True):
-            st.session_state.lang = "fr"
-            st.toast("Langue modifiée en Français ! 🇫🇷")
-            st.rerun()
-    with col_en:
-        if st.button("EN", use_container_width=True):
-            st.session_state.lang = "en"
-            st.toast("Language switched to English! 🇬🇧")
-            st.rerun()
+    if False: #desactivé pour l'instnat
+        st.sidebar.write("Language / Langue")
+        col_fr, col_en = st.sidebar.columns(2)
+        with col_fr:
+            if st.button("FR", use_container_width=True):
+                st.session_state.lang = "fr"
+                st.toast("Langue modifiée en Français ! 🇫🇷")
+                st.rerun()
+        with col_en:
+            if st.button("EN", use_container_width=True):
+                st.session_state.lang = "en"
+                st.toast("Language switched to English! 🇬🇧")
+                st.rerun()
     
     athlete = st.session_state.athlete
     st.sidebar.image(athlete.get("profile_medium"), width=100)
