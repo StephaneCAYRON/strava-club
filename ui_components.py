@@ -122,25 +122,6 @@ def render_tab_groups(texts):
                     else:
                         st.write("Aucune demande en attente.")
 
-def render_tab_leaderboard_old(texts):
-    """Contenu de l'onglet Leaderboard."""
-    m_groups = get_user_memberships(st.session_state.athlete['id'])
-    my_approved = [g for g in m_groups.data if g['status'] == 'approved']
-    
-    if my_approved:
-        selected_g = st.selectbox("Sélectionner un groupe", my_approved, format_func=lambda x: x['groups']['name'])
-        res = get_leaderboard_by_group(selected_g['group_id'])
-        if res.data:
-            df = pd.DataFrame(res.data).groupby(['firstname', 'avatar_url'])['distance_km'].sum().sort_values(ascending=False).reset_index()
-            cols = st.columns(4)
-            for i, row in df.iterrows():
-                with cols[i % 4]:
-                    st.image(row['avatar_url'], width=60)
-                    st.metric(f"#{i+1} {row['firstname']}", f"{row['distance_km']:.1f} km")
-    else:
-        st.info(texts["no_group"])
-
-
 def render_tab_leaderboard(texts):
     """Contenu de l'onglet Leaderboard avec Compteur de sorties pour l'année"""
     
@@ -189,9 +170,10 @@ def render_tab_leaderboard(texts):
         option_all = texts["all_year"]
         options_list = [option_all] + months_in_data
         
-        # Sélection par défaut : dernier mois actif
-        default_index = len(options_list) - 1 if len(months_in_data) > 0 else 0
-        selected_period = col_filter2.selectbox("Période", options_list, index=default_index)
+        # Sélection par défaut : dernier mois actif -> remplacé par toute l'année
+        # default_index = len(options_list) - 1 if len(months_in_data) > 0 else 0
+        # selected_period = col_filter2.selectbox("Période", options_list, index=default_index)
+        selected_period = col_filter2.selectbox("Période", options_list, index=0)
 
         # --- LOGIQUE DE FILTRAGE ---
         if selected_period == option_all:
