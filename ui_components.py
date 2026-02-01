@@ -100,7 +100,8 @@ def render_tab_groups(texts):
                     st.rerun()
 
     with col_admin:
-        if False: #desactivation pour l'instant
+        st.markdown(athlete['id'])
+        if athlete['id'] == 5251772: #desactivation pour l'instant
             st.markdown("### 🛠 Espace Administration")
             with st.expander(f"➕ {texts['create_group']}"):
                 name = st.text_input(texts["group_name"], key="new_g")
