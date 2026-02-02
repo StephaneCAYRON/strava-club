@@ -190,7 +190,7 @@ def render_tab_leaderboard(texts):
                     # URL du profil de l'athlète
                     strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
                     # Choix du logo (Version orange pour le lien)
-                   # Affiche "120.5 km [Icone]" sur la même ligne
+                    # Affiche "120.5 km [Icone]" sur la même ligne
                     strava_icon = "https://www.strava.com/favicon.ico"
                     st.markdown(
                         f"**{row['total_km']:.1f}** km "
@@ -198,7 +198,7 @@ def render_tab_leaderboard(texts):
                         f'<img src="{strava_icon}" width="15" style="margin-left: 5px; margin-bottom: 3px;">'
                         f'</a>', 
                         unsafe_allow_html=True
-)
+                    )
                     if is_global_view:
                         st.caption(f"{row['total_rides']} {texts['rides']}")
                 
@@ -221,7 +221,7 @@ def render_tab_leaderboard(texts):
         st.info("Aucune donnée disponible pour ce groupe.")
 
 def render_tab_sunday(texts):
-    """Onglet classement des sorties du Dimanche matin avec filtre mensuel"""
+    """Onglet classement des sorties du Dimanche matin avec filtre mensuel et tableau détaillé"""
     
     # --- 1. SÉLECTION DU GROUPE ---
     athlete_id = st.session_state.athlete['id']
@@ -235,7 +235,7 @@ def render_tab_sunday(texts):
     group_dict = {g['groups']['name']: g for g in my_approved}
     group_names = list(group_dict.keys())
 
-    # Sélection Groupe et Année sur 2 colonnes
+    # Sélection Groupe et Année
     c_sel1, c_sel2 = st.columns(2)
     with c_sel1:
         selected_name = st.pills(
@@ -259,44 +259,35 @@ def render_tab_sunday(texts):
     
     if res.data:
         df = pd.DataFrame(res.data)
-        
-        # Conversion Date & Timezone
         df['start_date'] = pd.to_datetime(df['start_date'])
-        # Optionnel : conversion timezone si nécessaire pour la précision de l'heure
-        # if df['start_date'].dt.tz is not None:
-        #     df['start_date'] = df['start_date'].dt.tz_convert('Europe/Paris')
 
-        # --- 3. FILTRAGE DIMANCHE MATIN (CRITÈRE STRICT) ---
-        # On ne garde que les dimanches (6) entre 5h et 10h
+        # --- 3. FILTRAGE DIMANCHE MATIN ---
+        # Dimanche (6) entre 5h et 10h
         df_sunday = df[
             (df['start_date'].dt.dayofweek == 6) & 
             (df['start_date'].dt.hour >= 5) & 
             (df['start_date'].dt.hour < 10)
-        ].copy() # .copy() évite les warnings Pandas
+        ].copy()
 
         if not df_sunday.empty:
             # --- 4. GESTION DES MOIS ---
-            # On enrichit le dataframe avec les noms des mois
             df_sunday['Mois'] = df_sunday['start_date'].dt.month_name()
             df_sunday['Mois_Num'] = df_sunday['start_date'].dt.month
 
-            # On récupère la liste des mois présents (triés chronologiquement)
             months_available = df_sunday.sort_values('Mois_Num')['Mois'].unique().tolist()
             
-            # Création du menu de sélection
             option_all = texts["all_year"]
             options_list = [option_all] + months_available
             
-            st.write("") # Petit espace
+            st.write("")
             selected_period = st.segmented_control(
                 "Période", 
                 options=options_list, 
                 selection_mode="single", 
                 default=option_all,
-                key="seg_sunday_month" # Clé unique indispensable
+                key="seg_sunday_month"
             )
 
-            # Filtrage final selon la sélection
             if selected_period == option_all:
                 df_final = df_sunday
                 title_suffix = f"{selected_year}"
@@ -304,35 +295,84 @@ def render_tab_sunday(texts):
                 df_final = df_sunday[df_sunday['Mois'] == selected_period]
                 title_suffix = f"{selected_period} {selected_year}"
 
-            # --- 5. AFFICHAGE DU CLASSEMENT ---
+            # --- 5. CLASSEMENT ET AFFICHAGE ---
             st.markdown(f"### {texts['sunday_header']} - {title_suffix}")
             st.caption(texts["sunday_desc"])
 
-            # On compte le nombre de sorties par personne
-            leaderboard = df_final.groupby(['id_strava', 'firstname', 'avatar_url']).size().reset_index(name='count')
-            leaderboard = leaderboard.sort_values('count', ascending=False)
+            # Agrégation : Compte des sorties ET somme des KM
+            leaderboard = df_final.groupby(['id_strava', 'firstname', 'avatar_url']).agg(
+                count=('distance_km', 'count'),
+                total_km=('distance_km', 'sum')
+            ).reset_index()
+            
+            leaderboard = leaderboard.sort_values(['count', 'total_km'], ascending=[False, False])
 
             if not leaderboard.empty:
+                # Affichage Visuel (Podium)
                 for i, row in leaderboard.iterrows():
-                    # Médailles pour le top 3
                     rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
                     
                     c1, c2, c3 = st.columns([1, 4, 2])
-                    
                     with c1:
                         st.image(get_safe_avatar_url(row['avatar_url']), width=40)
-                    
                     with c2:
                         st.markdown(f"**{rank_icon} {row['firstname']}**")
-                        # Petit lien vers le profil Strava
-                        strava_url = f"https://www.strava.com/athletes/{row['id_strava']}"
-                        st.caption(f"[Voir profil]({strava_url})")
-
+                        # st.caption(f"{row['total_km']:.1f} km cumulés") # Petit ajout sympa
                     with c3:
-                        # Affichage du score en gros
-                        st.markdown(f"**{row['count']}** {texts['sunday_rides_count']}")
-                    
+                        # URL du profil de l'athlète
+                        strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
+                        strava_icon = "https://www.strava.com/favicon.ico"
+                        #st.markdown(f"**{row['count']}** {texts['sunday_rides_count']}")
+                        st.markdown(
+                            f"**{row['count']}** {texts['sunday_rides_count']}"
+                            f'<a href="{strava_profile_url}" target="_blank">'
+                            f'<img src="{strava_icon}" width="15" style="margin-left: 5px; margin-bottom: 3px;">'
+                            f'</a>', 
+                            unsafe_allow_html=True
+                        )
                     st.divider()
+
+                    
+                    
+                    
+
+
+                # --- 6. GRAPHIQUE D'ÉVOLUTION CUMULÉE ---
+                st.write("")
+                st.subheader("Progression de l'assiduité")
+                
+                # Préparation des données pour le graphique (on utilise df_sunday qui contient toute l'année)
+                # 1. On groupe par athlète et par mois
+                df_chart = df_sunday.groupby(['firstname', 'Mois_Num', 'Mois']).size().reset_index(name='monthly_count')
+                
+                # 2. On calcule le cumul par athlète au fil des mois
+                df_chart = df_chart.sort_values(['firstname', 'Mois_Num'])
+                df_chart['cumul_sorties'] = df_chart.groupby('firstname')['monthly_count'].cumsum()
+
+                # 3. Création du graphique Altair
+                line_chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                    x=alt.X('Mois_Num:O', title="Mois", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y('cumul_sorties:Q', title="Cumul des sorties"),
+                    color=alt.Color('firstname:N', title="Athlète"),
+                    tooltip=['firstname', 'Mois', 'cumul_sorties']
+                ).properties(
+                    height=350
+                ).interactive()
+
+                st.altair_chart(line_chart, use_container_width=True)
+
+                # --- LE TABLEAU DÉTAILLÉ (AJOUTÉ ICI) ---
+                with st.expander("Voir le tableau détaillé"):
+                    st.dataframe(
+                        leaderboard[['firstname', 'count', 'total_km']], 
+                        use_container_width=True,
+                        column_config={
+                            "firstname": "Athlète",
+                            "count": st.column_config.NumberColumn("Sorties Dominicales", format="%d 🚴"),
+                            "total_km": st.column_config.NumberColumn("Distance Cumulée", format="%.1f km")
+                        },
+                        hide_index=True # Plus propre sans l'index 0,1,2...
+                    )
             else:
                 st.warning(f"Aucune sortie dominicale en {selected_period}.")
         else:
