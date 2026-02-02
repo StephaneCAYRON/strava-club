@@ -14,7 +14,7 @@ from ui_components_sidebar import sidebar_component
 from ui_components import render_tab_stats, render_tab_groups, render_tab_leaderboard
 
 # --- CONFIGURATION ---
-st.image("images/LogoACETransparent.png",width="content" )
+st.image("images/LogoACETransparent.png")
 st.set_page_config(page_title="Amicale Cyclo Escalquens", page_icon="images/LogoACETransparent.png", layout="centered")
 
 # --- INITIALISATION ---
