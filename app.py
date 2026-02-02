@@ -10,10 +10,12 @@ import streamlit as st
 from db_operations import *
 from strava_operations import *
 from translation import lang_dict
-from ui_components import sidebar_component, render_tab_stats, render_tab_groups, render_tab_leaderboard
+from ui_components_sidebar import sidebar_component
+from ui_components import render_tab_stats, render_tab_groups, render_tab_leaderboard
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Club Amicale Cyclo Escalquens 2026", page_icon="🚴", layout="wide")
+st.image("images/LogoACETransparent.png",width="content" )
+st.set_page_config(page_title="Amicale Cyclo Escalquens", page_icon="images/LogoACETransparent.png", layout="centered")
 
 # --- INITIALISATION ---
 for key in ['access_token', 'refresh_token', 'athlete', 'lang', 'auto_sync_done']:
@@ -67,7 +69,7 @@ if st.session_state.access_token:
         st.rerun()
 
     # Affichage des Onglets
-    st.title(texts["title"])
+    # st.title(texts["title"])
     t_stats, t_leader, t_groups = st.tabs([texts["tab_statsPerso"], texts["leaderboard_tab"], texts["group_tab"]])
     
     with t_stats: render_tab_stats(texts)
@@ -75,3 +77,8 @@ if st.session_state.access_token:
     with t_groups: render_tab_groups(texts)
 else:
     st.link_button(texts["connect"], get_strava_auth_url())
+
+st.markdown("---")
+col1, col2, col3 = st.columns([3, 2, 3])
+with col2:
+    st.image("https://developers.strava.com/images/api_logo_pwrdBy_strava_horiz_light.png", width=150)

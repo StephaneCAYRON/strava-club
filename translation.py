@@ -23,7 +23,7 @@ lang_dict = {
         "pending_requests": "Demandes en attente",
         "my_groups": "Mes groupes",
         "no_group": "Vous n'êtes membre d'aucun groupe.",
-        "leaderboard_tab": "Classement",
+        "leaderboard_tab": "Classement (km)",
         "group_tab":"Mes groupes",
         "tab_statsPerso":"Ma progression",
         "request_sent" : "Demande envoyée",

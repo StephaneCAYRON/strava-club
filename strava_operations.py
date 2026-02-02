@@ -100,3 +100,21 @@ def get_strava_stats(access_token, athlete_id):
         return "Stats indisponibles", 0
     except Exception:
         return "Erreur de connexion", 0
+    
+def get_safe_avatar_url(url):
+    """
+    Retourne une URL d'avatar valide. 
+    Si l'url est invalide, absente ou relative (ex: 'avatar/athlete/medium.png'),
+    retourne l'image par défaut de Strava.
+    """
+    DEFAULT_AVATAR = "https://www.strava.com/assets/users/male/info/medium.png"
+    
+    # On vérifie si l'URL existe et si c'est bien une chaîne de caractères
+    if not url or not isinstance(url, str):
+        return DEFAULT_AVATAR
+    
+    # Si l'URL ne commence pas par http (chemin relatif Strava), on renvoie le défaut
+    if not url.startswith("http"):
+        return DEFAULT_AVATAR
+        
+    return url

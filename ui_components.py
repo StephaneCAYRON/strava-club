@@ -4,42 +4,6 @@ import altair as alt
 from strava_operations import *
 from db_operations import *
 
-def sidebar_component(texts):
-    """Gère l'affichage et les actions de la barre latérale."""
-    
-    # --- SÉLECTEUR DE LANGUE (ICONES DRAPEAUX) ---
-    if False: #desactivé pour l'instnat
-        st.sidebar.write("Language / Langue")
-        col_fr, col_en = st.sidebar.columns(2)
-        with col_fr:
-            if st.button("FR", use_container_width=True):
-                st.session_state.lang = "fr"
-                st.toast("Langue modifiée en Français ! 🇫🇷")
-                st.rerun()
-        with col_en:
-            if st.button("EN", use_container_width=True):
-                st.session_state.lang = "en"
-                st.toast("Language switched to English! 🇬🇧")
-                st.rerun()
-    
-    athlete = st.session_state.athlete
-    st.sidebar.image(athlete.get("profile_medium"), width=100)
-    st.sidebar.success(f"{texts['sidebar_connected']} {athlete.get('firstname')}")
-
-    if st.sidebar.button(f"{texts['logout']}", use_container_width=True):
-        st.session_state.access_token = None
-        st.session_state.auto_sync_done = False
-        st.rerun()
-
-    if st.sidebar.button(texts["sync_btn"], use_container_width=True):
-        from strava_operations import fetch_all_activities_parallel
-        with st.spinner(texts["sync_spinner"]):
-            all_activities = fetch_all_activities_parallel(st.session_state.access_token)
-            if all_activities:
-                sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
-                st.sidebar.success(texts["sync_success"])
-                st.rerun()
-
 def render_tab_stats(texts):
     """Contenu de l'onglet Statistiques Personnelles."""
     # --- STATS MACROS ---
@@ -100,7 +64,7 @@ def render_tab_groups(texts):
                     st.rerun()
 
     with col_admin:
-        st.markdown(athlete['id'])
+        #st.markdown(athlete['id'])
         if athlete['id'] == 5251772: #desactivation pour l'instant
             st.markdown("### 🛠 Espace Administration")
             with st.expander(f"➕ {texts['create_group']}"):
@@ -133,21 +97,29 @@ def render_tab_leaderboard(texts):
     if not my_approved:
         st.info(texts["no_group"])
         return
+    
+    # Crée un dictionnaire de correspondance Nom -> Objet
+    group_dict = {g['groups']['name']: g for g in my_approved}
+    group_names = list(group_dict.keys())
 
-    selected_g = st.selectbox(
-        "Sélectionner un groupe", 
-        my_approved, 
-        format_func=lambda x: x['groups']['name']
+    # Affiche les pills avec les noms uniquement
+    selected_name = st.pills(
+        "Groupe", 
+        options=group_names, 
+        selection_mode="single", 
+        default=group_names[0]
     )
 
-    # --- FILTRES UI ---
-    col_filter1, col_filter2 = st.columns(2)
+    # Récupère l'objet complet à partir du nom sélectionné
+    selected_g = group_dict[selected_name]
 
     years = get_years_for_group(selected_g['group_id'])
     if years:
-        selected_year = col_filter1.selectbox("Année", years)
+        #selected_year = col_filter1.selectbox("Année", years)
+        # Au lieu de selectbox pour l'année
+        selected_year = st.pills("Année", years, selection_mode="single", default=years[0])
     else:
-        selected_year = 2026 # Valeur par défaut
+        selected_year = 2026 # Valeur par défaut si problème
 
     res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
     
@@ -173,7 +145,9 @@ def render_tab_leaderboard(texts):
         # Sélection par défaut : dernier mois actif -> remplacé par toute l'année
         # default_index = len(options_list) - 1 if len(months_in_data) > 0 else 0
         # selected_period = col_filter2.selectbox("Période", options_list, index=default_index)
-        selected_period = col_filter2.selectbox("Période", options_list, index=0)
+        # selected_period = col_filter2.selectbox("Période", options_list, index=0)
+        # selected_period = st.pills("Mois", options_list, selection_mode="single", default=options_list[0])
+        selected_period =st.segmented_control("Mois", options_list, selection_mode="single", default=options_list[0])
 
         # --- LOGIQUE DE FILTRAGE ---
         if selected_period == option_all:
@@ -187,7 +161,7 @@ def render_tab_leaderboard(texts):
 
         # --- CLASSEMENT (AGGRÉGATION MULTIPLE) ---
         # On utilise .agg pour calculer la somme des km ET compter le nombre d'activités
-        leaderboard = df_final.groupby(['firstname', 'avatar_url']).agg(
+        leaderboard = df_final.groupby(['id_strava','firstname', 'avatar_url']).agg(
             total_km=('distance_km', 'sum'),
             total_rides=('distance_km', 'count') # Compte le nombre de lignes
         ).sort_values('total_km', ascending=False).reset_index()
@@ -195,33 +169,41 @@ def render_tab_leaderboard(texts):
         st.markdown(f"### 🏆 Classement : {title_suffix}")
         
         if not leaderboard.empty:
-            cols = st.columns(4)
-            for i, row in leaderboard.iterrows():
-                with cols[i % 4]:
-                    st.image(row['avatar_url'], width=60)
-                    
-                    rank_icon = "🥇" if i==0 else "🥈" if i==1 else "🥉" if i==2 else f"#{i+1}"
-                    
-                    # Préparation des valeurs à afficher
-                    display_km = f"{row['total_km']:.1f} km"
-                    
-                    # Si c'est la vue globale, on affiche le nombre de sorties en "delta" (sous le chiffre)
-                    # delta_color="off" permet de l'afficher en gris (neutre)
-                    if is_global_view:
-                        sub_text = f"{row['total_rides']} {texts['rides']}"
-                        st.metric(
-                            label=f"{rank_icon} {row['firstname']}", 
-                            value=display_km, 
-                            delta=sub_text, 
-                            delta_color="off" 
-                        )
-                    else:
-                        # Affichage standard pour le mois
-                        st.metric(
-                            label=f"{rank_icon} {row['firstname']}", 
-                            value=display_km
-                        )
             
+            # On utilise un conteneur pour styliser un peu
+            for i, row in leaderboard.iterrows():
+                # Préparation des données
+                rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+                avatar = get_safe_avatar_url(row['avatar_url'])
+                
+                # On crée une ligne avec 3 colonnes de largeurs différentes
+                # [Image, Nom/Stats, Distance]
+                c1, c2, c3 = st.columns([1, 4, 2])
+                
+                with c1:
+                    st.image(avatar, width=50)
+                
+                with c2:
+                    st.markdown(f"**{rank_icon} {row['firstname']}**")
+                
+                with c3:
+                    # URL du profil de l'athlète
+                    strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
+                    # Choix du logo (Version orange pour le lien)
+                   # Affiche "120.5 km [Icone]" sur la même ligne
+                    strava_icon = "https://www.strava.com/favicon.ico"
+                    st.markdown(
+                        f"**{row['total_km']:.1f}** km "
+                        f'<a href="{strava_profile_url}" target="_blank">'
+                        f'<img src="{strava_icon}" width="15" style="margin-left: 5px; margin-bottom: 3px;">'
+                        f'</a>', 
+                        unsafe_allow_html=True
+)
+                    if is_global_view:
+                        st.caption(f"{row['total_rides']} {texts['rides']}")
+                
+                #st.divider() # Petite ligne de séparation entre les athlètes
+
             with st.expander("Voir le tableau détaillé"):
                 st.dataframe(
                     leaderboard[['firstname', 'total_km', 'total_rides']], 
