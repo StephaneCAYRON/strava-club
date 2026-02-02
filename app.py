@@ -16,6 +16,17 @@ from ui_components import render_tab_stats, render_tab_groups, render_tab_leader
 # --- CONFIGURATION ---
 st.image("images/LogoACETransparent.png")
 st.set_page_config(page_title="Amicale Cyclo Escalquens", page_icon="images/LogoACETransparent.png", layout="centered")
+st.markdown(
+    f"""
+    <head>
+        <meta property="og:title" content="Amicale Cyclo Escalquens - Challenges annuels">
+        <meta property="og:description" content="Suivez le classement et les sorties du club en temps réel !">
+        <meta property="og:image" content="https://raw.githubusercontent.com/StephaneCAYRON/strava-club/main/images/LogoACETransparent.png">
+        <meta property="og:type" content="website">
+    </head>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- INITIALISATION ---
 for key in ['access_token', 'refresh_token', 'athlete', 'lang', 'auto_sync_done']:
