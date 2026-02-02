@@ -219,3 +219,123 @@ def render_tab_leaderboard(texts):
 
     else:
         st.info("Aucune donnée disponible pour ce groupe.")
+
+def render_tab_sunday(texts):
+    """Onglet classement des sorties du Dimanche matin avec filtre mensuel"""
+    
+    # --- 1. SÉLECTION DU GROUPE ---
+    athlete_id = st.session_state.athlete['id']
+    m_groups = get_user_memberships(athlete_id)
+    my_approved = [g for g in m_groups.data if g['status'] == 'approved']
+    
+    if not my_approved:
+        st.info(texts["no_group"])
+        return
+    
+    group_dict = {g['groups']['name']: g for g in my_approved}
+    group_names = list(group_dict.keys())
+
+    # Sélection Groupe et Année sur 2 colonnes
+    c_sel1, c_sel2 = st.columns(2)
+    with c_sel1:
+        selected_name = st.pills(
+            "Groupe", 
+            options=group_names, 
+            selection_mode="single", 
+            default=group_names[0],
+            key="pills_sunday_group"
+        )
+    selected_g = group_dict[selected_name]
+
+    with c_sel2:
+        years = get_years_for_group(selected_g['group_id'])
+        if years:
+            selected_year = st.pills("Année", years, selection_mode="single", default=years[0], key="pills_sunday_year")
+        else:
+            selected_year = 2026
+
+    # --- 2. RÉCUPÉRATION DES DONNÉES ---
+    res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
+    
+    if res.data:
+        df = pd.DataFrame(res.data)
+        
+        # Conversion Date & Timezone
+        df['start_date'] = pd.to_datetime(df['start_date'])
+        # Optionnel : conversion timezone si nécessaire pour la précision de l'heure
+        # if df['start_date'].dt.tz is not None:
+        #     df['start_date'] = df['start_date'].dt.tz_convert('Europe/Paris')
+
+        # --- 3. FILTRAGE DIMANCHE MATIN (CRITÈRE STRICT) ---
+        # On ne garde que les dimanches (6) entre 5h et 10h
+        df_sunday = df[
+            (df['start_date'].dt.dayofweek == 6) & 
+            (df['start_date'].dt.hour >= 5) & 
+            (df['start_date'].dt.hour < 10)
+        ].copy() # .copy() évite les warnings Pandas
+
+        if not df_sunday.empty:
+            # --- 4. GESTION DES MOIS ---
+            # On enrichit le dataframe avec les noms des mois
+            df_sunday['Mois'] = df_sunday['start_date'].dt.month_name()
+            df_sunday['Mois_Num'] = df_sunday['start_date'].dt.month
+
+            # On récupère la liste des mois présents (triés chronologiquement)
+            months_available = df_sunday.sort_values('Mois_Num')['Mois'].unique().tolist()
+            
+            # Création du menu de sélection
+            option_all = texts["all_year"]
+            options_list = [option_all] + months_available
+            
+            st.write("") # Petit espace
+            selected_period = st.segmented_control(
+                "Période", 
+                options=options_list, 
+                selection_mode="single", 
+                default=option_all,
+                key="seg_sunday_month" # Clé unique indispensable
+            )
+
+            # Filtrage final selon la sélection
+            if selected_period == option_all:
+                df_final = df_sunday
+                title_suffix = f"{selected_year}"
+            else:
+                df_final = df_sunday[df_sunday['Mois'] == selected_period]
+                title_suffix = f"{selected_period} {selected_year}"
+
+            # --- 5. AFFICHAGE DU CLASSEMENT ---
+            st.markdown(f"### {texts['sunday_header']} - {title_suffix}")
+            st.caption(texts["sunday_desc"])
+
+            # On compte le nombre de sorties par personne
+            leaderboard = df_final.groupby(['id_strava', 'firstname', 'avatar_url']).size().reset_index(name='count')
+            leaderboard = leaderboard.sort_values('count', ascending=False)
+
+            if not leaderboard.empty:
+                for i, row in leaderboard.iterrows():
+                    # Médailles pour le top 3
+                    rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+                    
+                    c1, c2, c3 = st.columns([1, 4, 2])
+                    
+                    with c1:
+                        st.image(get_safe_avatar_url(row['avatar_url']), width=40)
+                    
+                    with c2:
+                        st.markdown(f"**{rank_icon} {row['firstname']}**")
+                        # Petit lien vers le profil Strava
+                        strava_url = f"https://www.strava.com/athletes/{row['id_strava']}"
+                        st.caption(f"[Voir profil]({strava_url})")
+
+                    with c3:
+                        # Affichage du score en gros
+                        st.markdown(f"**{row['count']}** {texts['sunday_rides_count']}")
+                    
+                    st.divider()
+            else:
+                st.warning(f"Aucune sortie dominicale en {selected_period}.")
+        else:
+            st.warning("Aucune sortie trouvée le dimanche matin (5h-10h) pour cette année.")
+    else:
+        st.info("Aucune donnée disponible.")

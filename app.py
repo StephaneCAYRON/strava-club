@@ -11,7 +11,7 @@ from db_operations import *
 from strava_operations import *
 from translation import lang_dict
 from ui_components_sidebar import sidebar_component
-from ui_components import render_tab_stats, render_tab_groups, render_tab_leaderboard
+from ui_components import render_tab_stats, render_tab_groups, render_tab_leaderboard, render_tab_sunday
 
 # --- CONFIGURATION ---
 st.image("images/LogoACETransparent.png")
@@ -70,9 +70,10 @@ if st.session_state.access_token:
 
     # Affichage des Onglets
     # st.title(texts["title"])
-    t_stats, t_leader, t_groups = st.tabs([texts["tab_statsPerso"], texts["leaderboard_tab"], texts["group_tab"]])
+    t_stats, t_sunday, t_leader, t_groups = st.tabs([texts["tab_statsPerso"], texts["tab_sunday"],texts["leaderboard_tab"], texts["group_tab"]])
     
     with t_stats: render_tab_stats(texts)
+    with t_sunday: render_tab_sunday(texts)
     with t_leader: render_tab_leaderboard(texts)
     with t_groups: render_tab_groups(texts)
 else:

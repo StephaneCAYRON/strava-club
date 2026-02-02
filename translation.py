@@ -30,6 +30,12 @@ lang_dict = {
         "approve" : "Approuver",
         "all_year": "Toute l'année",
         "rides": "sorties",
+        # ... challenge dimanche ...
+        "tab_sunday": "🌞 Dimanche Matin",
+        "sunday_header": "Assiduité du Dimanche",
+        "sunday_desc": "Sorties vélo commencées le dimanche entre 5h et 10h.",
+        "sunday_rides_count": "sorties dominicales",
+
     },
     "en": {
         "title": "🚴 Challenge Amicale Cyclo Escalquens (ALPHA version...)",
@@ -60,5 +66,10 @@ lang_dict = {
         "approve" : "Approve",
         "all_year": "Full Year",
         "rides": "rides",
+        # ... challenge dimanche ...
+        "tab_sunday": "🌞 Sunday Morning",
+        "sunday_header": "Sunday Morning Consistency",
+        "sunday_desc": "Rides started on Sunday between 5 AM and 10 AM.",
+        "sunday_rides_count": "sunday rides",
     }
 }
