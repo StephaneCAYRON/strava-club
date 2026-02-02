@@ -76,7 +76,13 @@ if st.session_state.access_token:
     with t_leader: render_tab_leaderboard(texts)
     with t_groups: render_tab_groups(texts)
 else:
-    st.link_button(texts["connect"], get_strava_auth_url())
+    # On crée 3 colonnes : [Marge gauche, Bouton, Marge droite]
+    # Le ratio [1, 2, 1] signifie que le bouton occupe 50% de la largeur centrale
+    left_co, cent_co, last_co = st.columns([1, 2, 1])
+
+    with cent_co:
+        st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
+    
 
 st.markdown("---")
 col1, col2, col3 = st.columns([3, 2, 3])
