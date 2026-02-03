@@ -304,7 +304,7 @@ def render_tab_sunday(texts):
                 count=('distance_km', 'count'), total_km=('distance_km', 'sum')
             ).sort_values('count', ascending=False).reset_index()
         
-            leaderboard = leaderboard.sort_values(['count'], ascending=[False])
+            #leaderboard = leaderboard.sort_values(['count'], ascending=[False])
             i = 0
             if not leaderboard.empty:
                 # Affichage Visuel (Podium)
