@@ -18,9 +18,11 @@ from ui_components import render_tab_stats
 from ui_components_tab_sunday import render_tab_sunday
 from ui_components_tab_km import render_tab_km
 from ui_components_tab_groups import render_tab_groups
+from ui_components_tab_admin import render_tab_admin
 
 # --- CONFIGURATION ---
 st.image("images/LogoACETransparent.png")
+
 
 # --- INITIALISATION ---
 for key in ['access_token', 'refresh_token', 'athlete', 'lang', 'auto_sync_done']:
@@ -74,13 +76,21 @@ if st.session_state.access_token:
         st.rerun()
 
     # Affichage des Onglets
-    # st.title(texts["title"])
-    t_stats, t_sunday, t_leader, t_groups = st.tabs([texts["tab_statsPerso"], texts["tab_sunday"],texts["leaderboard_tab"], texts["group_tab"]])
+    ADMIN_ID = 5251772
+    tabs_names = [texts["tab_statsPerso"], texts["tab_sunday"],texts["leaderboard_tab"], texts["group_tab"]]
     
-    with t_stats: render_tab_stats(texts)
-    with t_sunday: render_tab_sunday(texts)
-    with t_leader: render_tab_km(texts)
-    with t_groups: render_tab_groups(texts)
+    # Si c'est l'admin, on ajoute l'onglet
+    if st.session_state.athlete['id'] == ADMIN_ID:
+        tabs_names.append("🛠️ Admin")
+    #t_stats, t_sunday, t_leader, t_groups, t_admin = st.tabs(tabs_names)
+    tabs = st.tabs(tabs_names)
+
+    with tabs[0]: render_tab_stats(texts)
+    with tabs[1]: render_tab_sunday(texts)
+    with tabs[2]: render_tab_km(texts)
+    with tabs[3]: render_tab_groups(texts)
+    if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
+          with tabs[4]: render_tab_admin(texts)
 else:
     # On crée 3 colonnes : [Marge gauche, Bouton, Marge droite]
     # Le ratio [1, 2, 1] signifie que le bouton occupe 50% de la largeur centrale

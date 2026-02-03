@@ -19,7 +19,21 @@ else:
     # Pour éviter que l'import plante si on n'a pas les clés (ex: lors du build)
     supabase = None 
 
-MAX_ROWS_FORSQL = 20000
+MAX_ROWS_FORSQL = 50000
+
+def get_last_sync_time():
+    
+    res = supabase.table("activities") \
+        .select("start_date") \
+        .order("created_at", desc=True) \
+        .limit(1) \
+        .execute()
+    
+    if res.data:
+        # On formate la date créée par Supabase (created_at)
+        last_time = pd.to_datetime(res.data[0]['created_at'])
+        return last_time.strftime("%d/%m/%Y à %H:%M")
+    return "Inconnue"
 
 def sync_profile_and_activities(athlete, activities, refresh_token):
     """Sauvegarde le profil et les activités dans Supabase."""
