@@ -6,6 +6,7 @@ from supabase import create_client, Client
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+MAX_ROWS_FORSQL = 20000
 
 def sync_profile_and_activities(athlete, activities, refresh_token):
     """Sauvegarde le profil et les activités dans Supabase."""
@@ -46,17 +47,16 @@ def get_leaderboard_data():
 def get_years_for_group(group_id):
     """Récupère les années distinctes pour un groupe spécifique"""
     # On ne sélectionne que la colonne start_date pour être léger
-    response = supabase.table("group_activities")\
-        .select("start_date")\
-        .eq("group_id", group_id)\
-        .execute()
-    
+    response = supabase.table("group_years").select("year").eq("group_id", group_id).execute()
     if response.data:
-        # Extraction des années uniques avec Pandas ou set comprehension
-        df = pd.DataFrame(response.data)
-        df['year'] = pd.to_datetime(df['start_date']).dt.year
-        return sorted(df['year'].unique().tolist(), reverse=True)
-    return []
+        # response.data ressemble à: [{'year': 2026}, {'year': 2025}, {'year': 2017}]
+        # On extrait juste la valeur numérique de la clé 'year'
+        years = [row['year'] for row in response.data]
+        
+        # On trie du plus récent au plus ancien
+        return sorted(years, reverse=True)
+    return [2026]
+
 
 # Option plus performante si vous avez des milliers d'activités
 def get_leaderboard_by_group_by_year(group_id, year):
@@ -69,7 +69,7 @@ def get_leaderboard_by_group_by_year(group_id, year):
         .eq("type", "Ride")\
         .gte("start_date", start_date)\
         .lte("start_date", end_date)\
-        .limit(5000)\
+        .limit(MAX_ROWS_FORSQL)\
         .execute()
 
 def get_leaderboard_by_group(group_id):
@@ -78,7 +78,7 @@ def get_leaderboard_by_group(group_id):
         .select("firstname, avatar_url, distance_km, start_date, type")\
         .eq("group_id", group_id)\
         .eq("type", "Ride")\
-        .limit(5000)\
+        .limit(MAX_ROWS_FORSQL)\
         .execute() # On filtre directement 'Ride' ici pour alléger le transfert
 
 def get_athlete_summary(athlete_id):

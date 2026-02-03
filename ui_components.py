@@ -86,10 +86,8 @@ def render_tab_groups(texts):
                     else:
                         st.write("Aucune demande en attente.")
 
-def render_tab_leaderboard(texts):
-    """Contenu de l'onglet Leaderboard avec Compteur de sorties pour l'année"""
-    
-    # 1. Récupération des données
+def common_critria(key_id):
+    # --- 1. SÉLECTION DU GROUPE ---
     athlete_id = st.session_state.athlete['id']
     m_groups = get_user_memberships(athlete_id)
     my_approved = [g for g in m_groups.data if g['status'] == 'approved']
@@ -98,28 +96,34 @@ def render_tab_leaderboard(texts):
         st.info(texts["no_group"])
         return
     
-    # Crée un dictionnaire de correspondance Nom -> Objet
     group_dict = {g['groups']['name']: g for g in my_approved}
     group_names = list(group_dict.keys())
 
-    # Affiche les pills avec les noms uniquement
-    selected_name = st.pills(
-        "Groupe", 
-        options=group_names, 
-        selection_mode="single", 
-        default=group_names[0]
-    )
-
-    # Récupère l'objet complet à partir du nom sélectionné
+    # Sélection Groupe et Année
+    c_sel1, c_sel2 = st.columns(2)
+    with c_sel1:
+        selected_name = st.pills(
+            "Groupe", 
+            options=group_names, 
+            selection_mode="single", 
+            default=group_names[0],
+            key="pills_group" + key_id
+        )
     selected_g = group_dict[selected_name]
 
-    years = get_years_for_group(selected_g['group_id'])
-    if years:
-        #selected_year = col_filter1.selectbox("Année", years)
-        # Au lieu de selectbox pour l'année
-        selected_year = st.pills("Année", years, selection_mode="single", default=years[0])
-    else:
-        selected_year = 2026 # Valeur par défaut si problème
+    with c_sel2:
+        years = get_years_for_group(selected_g['group_id'])
+        if years:
+            selected_year = st.pills("Année", years, selection_mode="single", default=years[0], key="pills_year"+key_id)
+        else:
+            selected_year = 2026   
+    return selected_g, selected_year
+
+def render_tab_leaderboard(texts):
+    """Contenu de l'onglet Leaderboard avec Compteur de sorties pour l'année"""
+    
+    # --- 1. SÉLECTION  GROUPE et ANNEE ---
+    selected_g, selected_year = common_critria("km")
 
     res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
     
@@ -152,7 +156,7 @@ def render_tab_leaderboard(texts):
         # --- LOGIQUE DE FILTRAGE ---
         if selected_period == option_all:
             df_final = df_year
-            title_suffix = f"{selected_year} (Global)"
+            title_suffix = f"{selected_year}"
             is_global_view = True
         else:
             df_final = df_year[df_year['Mois'] == selected_period]
@@ -166,7 +170,7 @@ def render_tab_leaderboard(texts):
             total_rides=('distance_km', 'count') # Compte le nombre de lignes
         ).sort_values('total_km', ascending=False).reset_index()
 
-        st.markdown(f"### 🏆 Classement : {title_suffix}")
+        st.markdown(f"### Kilométrage : {title_suffix}")
         
         if not leaderboard.empty:
             
@@ -185,7 +189,8 @@ def render_tab_leaderboard(texts):
                 
                 with c2:
                     st.markdown(f"**{rank_icon} {row['firstname']}**")
-                
+                    #if is_global_view:
+                    st.caption(f"{row['total_rides']} {texts['rides']}")
                 with c3:
                     # URL du profil de l'athlète
                     strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
@@ -199,8 +204,7 @@ def render_tab_leaderboard(texts):
                         f'</a>', 
                         unsafe_allow_html=True
                     )
-                    if is_global_view:
-                        st.caption(f"{row['total_rides']} {texts['rides']}")
+                    
                 
                 #st.divider() # Petite ligne de séparation entre les athlètes
 
@@ -223,36 +227,8 @@ def render_tab_leaderboard(texts):
 def render_tab_sunday(texts):
     """Onglet classement des sorties du Dimanche matin avec filtre mensuel et tableau détaillé"""
     
-    # --- 1. SÉLECTION DU GROUPE ---
-    athlete_id = st.session_state.athlete['id']
-    m_groups = get_user_memberships(athlete_id)
-    my_approved = [g for g in m_groups.data if g['status'] == 'approved']
-    
-    if not my_approved:
-        st.info(texts["no_group"])
-        return
-    
-    group_dict = {g['groups']['name']: g for g in my_approved}
-    group_names = list(group_dict.keys())
-
-    # Sélection Groupe et Année
-    c_sel1, c_sel2 = st.columns(2)
-    with c_sel1:
-        selected_name = st.pills(
-            "Groupe", 
-            options=group_names, 
-            selection_mode="single", 
-            default=group_names[0],
-            key="pills_sunday_group"
-        )
-    selected_g = group_dict[selected_name]
-
-    with c_sel2:
-        years = get_years_for_group(selected_g['group_id'])
-        if years:
-            selected_year = st.pills("Année", years, selection_mode="single", default=years[0], key="pills_sunday_year")
-        else:
-            selected_year = 2026
+    # --- 1. SÉLECTION  GROUPE et ANNEE ---
+    selected_g, selected_year = common_critria("sunday")
 
     # --- 2. RÉCUPÉRATION DES DONNÉES ---
     res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
@@ -328,7 +304,6 @@ def render_tab_sunday(texts):
                             f'</a>', 
                             unsafe_allow_html=True
                         )
-                    #st.divider()
 
                 # --- 6. GRAPHIQUE D'ÉVOLUTION CUMULÉE ---
                 st.write("")
