@@ -1,11 +1,24 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
+import os
 
-# Initialisation (utilisée en interne)
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# --- INIT SUPABASE HYBRIDE ---
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except (FileNotFoundError, AttributeError, KeyError):
+    # Fallback pour le script local / GitHub Actions
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# On vérifie qu'on a bien les clés avant de créer le client
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+else:
+    # Pour éviter que l'import plante si on n'a pas les clés (ex: lors du build)
+    supabase = None 
+
 MAX_ROWS_FORSQL = 20000
 
 def sync_profile_and_activities(athlete, activities, refresh_token):

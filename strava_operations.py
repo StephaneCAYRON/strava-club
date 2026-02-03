@@ -1,13 +1,28 @@
 import streamlit as st
 import requests
-import urllib.parse
+import os
 import concurrent.futures
-import requests
-from translation import lang_dict  # Import de votre dictionnaire existant
 
-STRAVA_CLIENT_ID = st.secrets["STRAVA_CLIENT_ID"]
-STRAVA_CLIENT_SECRET = st.secrets["STRAVA_CLIENT_SECRET"]
-STRAVA_REDIRECT_URI = st.secrets["STRAVA_REDIRECT_URI"]
+# --- GESTION HYBRIDE DES SECRETS (Streamlit Cloud OU Script Local) ---
+def get_config(key):
+    try:
+        return st.secrets[key]
+    except (FileNotFoundError, AttributeError, KeyError):
+        return os.getenv(key)
+
+STRAVA_CLIENT_ID = get_config("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = get_config("STRAVA_CLIENT_SECRET")
+STRAVA_REDIRECT_URI = get_config("STRAVA_REDIRECT_URI")
+
+def exchange_refresh_token(refresh_token):
+    """Échange le refresh token contre un nouvel access token."""
+    res = requests.post("https://www.strava.com/oauth/token", data={
+        'client_id': STRAVA_CLIENT_ID,
+        'client_secret': STRAVA_CLIENT_SECRET,
+        'refresh_token': refresh_token,
+        'grant_type': 'refresh_token'
+    })
+    return res.json() if res.status_code == 200 else None
 
 def get_strava_auth_url():
     # On demande explicitement le droit de lire les activités

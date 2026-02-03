@@ -1,93 +1,139 @@
+import os
 import datetime
 import traceback
-from db_operations import supabase, sync_profile_and_activities
-from strava_operations import exchange_refresh_token, fetch_page
-
-import os
+import requests
 from dotenv import load_dotenv
 
-# Maintenant, os.getenv ira chercher soit dans le .env, soit dans les secrets GitHub
-def get_secret(key):
-    # 1. On essaie d'abord via Streamlit (pour l'interface web)
-    try:
-        result = os.getenv(key)
-        print(f"[{datetime.datetime.now()}] key#value : {key}#{result}")
-        return result
-    except:
-        # 2. Sinon on prend dans l'environnement (pour le script de nuit)
-        return os.getenv(key)
+# --- 1. CONFIGURATION DE L'ENVIRONNEMENT ---
+# Charge les variables du fichier .env (pour le local)
+load_dotenv()
 
+# On tente d'importer les modules du projet.
+# ATTENTION : Vos fichiers db_operations.py et strava_operations.py doivent
+# être capables de gérer l'absence de st.secrets (voir étapes précédentes).
+try:
+    from db_operations import supabase, sync_profile_and_activities
+    from strava_operations import fetch_page
+except ImportError as e:
+    print("❌ ERREUR D'IMPORT : Assurez-vous que db_operations et strava_operations sont accessibles.")
+    print("Si vous utilisez st.secrets dans ces fichiers, remplacez par os.getenv pour le script.")
+    raise e
+
+# Récupération des secrets depuis l'environnement
+STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+
+def exchange_refresh_token_local(refresh_token):
+    """
+    Fonction locale pour échanger le token sans dépendre de st.secrets.
+    Renvoie le JSON complet ou None.
+    """
+    if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
+        print("❌ ERREUR : STRAVA_CLIENT_ID ou SECRET manquant dans les variables d'environnement.")
+        return None
+
+    try:
+        res = requests.post("https://www.strava.com/oauth/token", data={
+            'client_id': STRAVA_CLIENT_ID,
+            'client_secret': STRAVA_CLIENT_SECRET,
+            'refresh_token': refresh_token,
+            'grant_type': 'refresh_token'
+        })
+        if res.status_code == 200:
+            return res.json()
+        else:
+            print(f"⚠️ Erreur Strava ({res.status_code}) : {res.text}")
+            return None
+    except Exception as e:
+        print(f"⚠️ Exception réseau lors du refresh : {e}")
+        return None
 
 def nightly_sync():
-
-    # Charge les variables du fichier .env s'il existe
-    load_dotenv()
-    # Initialisation (utilisée en interne)
-    SUPABASE_URL = get_secret("SUPABASE_URL")
-    SUPABASE_KEY = get_secret("SUPABASE_KEY")
-
-    print(f"[{datetime.datetime.now()}] --- DÉBUT DE LA SYNCHRONISATION NOCTURNE ---")
+    print(f"\n[{datetime.datetime.now()}] --- 🚀 DÉBUT DE LA SYNCHRONISATION BATCH ---")
     
-    # 1. Récupération des profils depuis Supabase
+    # 1. Vérification de la connexion DB
+    if not supabase:
+        print("❌ ERREUR : Client Supabase non initialisé (vérifiez SUPABASE_URL/KEY).")
+        return
+
+    # 2. Récupération des profils actifs
     try:
-        profiles = supabase.table("profiles").select("id_strava, refresh_token, firstname").execute()
-    except Exception as e:
-        print(f"[{datetime.datetime.now()}] ❌ ERREUR CRITIQUE : Impossible de lire la table profiles.")
+        # On récupère toutes les infos nécessaires pour reconstruire l'objet 'athlete'
+        response = supabase.table("profiles").select("*").execute()
+        profiles = response.data
+    except Exception:
         print(traceback.format_exc())
         return
 
+    print(f"👥 {len(profiles)} athlètes trouvés à mettre à jour.")
+
     success_count = 0
     error_count = 0
+    updated_tokens = 0
 
-    for profile in profiles.data:
+    for profile in profiles:
         athlete_id = profile['id_strava']
-        athlete_name = profile.get('firstname', 'Inconnu')
-        old_refresh_token = profile['refresh_token']
-        
-        print(f"[{datetime.datetime.now()}] Traitement de l'athlète : {athlete_name} ({athlete_id})...")
+        # On utilise le prénom/nom pour les logs, ou 'Inconnu' par défaut
+        full_name = f"{profile.get('firstname', 'Athlète')} {profile.get('lastname', '')}".strip()
+        old_refresh = profile.get('refresh_token')
+
+        print(f"👉 Traitement de : {full_name} ({athlete_id})")
+
+        if not old_refresh:
+            print("   ⚠️ Pas de refresh token, ignoré.")
+            error_count += 1
+            continue
 
         try:
-            # 2. Rafraîchissement du Token
-            tokens = exchange_refresh_token(old_refresh_token)
+            # --- A. ROTATION DU TOKEN ---
+            tokens = exchange_refresh_token_local(old_refresh)
+            
             if not tokens or 'access_token' not in tokens:
-                print(f"  ⚠️ ÉCHEC : Impossible de rafraîchir le token pour {athlete_name}. L'utilisateur a peut-être révoqué l'accès.")
+                print("   ⛔ Impossible de rafraîchir le token. Accès révoqué ?")
                 error_count += 1
-                exit
-                #continue
+                continue
 
             new_access = tokens['access_token']
             new_refresh = tokens['refresh_token']
 
-            # 3. Récupération des dernières activités (Page 1)
-            # Note : on utilise per_page=10 pour être léger sur l'API
-            latest_activities = fetch_page(new_access, page=1, per_page=10)
+            # --- B. SAUVEGARDE CRITIQUE DU TOKEN ---
+            # On le sauvegarde tout de suite pour ne pas le perdre si la suite plante
+            if new_refresh != old_refresh:
+                supabase.table("profiles").update({
+                    "refresh_token": new_refresh,
+                    "updated_at": datetime.datetime.now().isoformat()
+                }).eq("id_strava", athlete_id).execute()
+                updated_tokens += 1
             
-            if latest_activities is None:
-                print(f"  ⚠️ ÉCHEC : Erreur lors de la récupération des activités Strava pour {athlete_name}.")
-                error_count += 1
-                continue
+            # --- C. RÉCUPÉRATION DES ACTIVITÉS ---
+            # On récupère les 30 dernières activités (permet de mettre à jour 
+            # les titres modifiés ou descriptions des sorties récentes)
+            recent_activities = fetch_page(new_access, page=1, per_page=30)
+            
+            if recent_activities:
+                # --- D. RECONSTRUCTION DE L'OBJET ATHLETE ---
+                # db_operations attend un dictionnaire style Strava
+                athlete_obj = {
+                    "id": athlete_id,
+                    "firstname": profile.get("firstname"),
+                    "lastname": profile.get("lastname"),
+                    "profile_medium": profile.get("avatar_url")
+                }
 
-            # 4. Synchronisation Base de données
-            # On crée un stub pour correspondre à la structure attendue par ta fonction
-            athlete_stub = {"id": athlete_id} 
-            
-            sync_result = sync_profile_and_activities(athlete_stub, latest_activities, new_refresh)
-            
-            if sync_result:
-                print(f"  ✅ SUCCÈS : {len(latest_activities)} activités traitées.")
+                # --- E. SYNCHRONISATION (UPSERT) ---
+                # Cette fonction va mettre à jour les activités existantes et créer les nouvelles
+                sync_profile_and_activities(athlete_obj, recent_activities, new_refresh)
+                print(f"   ✅ {len(recent_activities)} activités vérifiées/synchronisées.")
                 success_count += 1
             else:
-                print(f"  ⚠️ ÉCHEC : Erreur lors de l'upsert dans Supabase pour {athlete_name}.")
-                error_count += 1
+                print("   ℹ️ Aucune activité récente trouvée.")
 
         except Exception as e:
-            print(f"  ❌ ERREUR INATTENDUE pour {athlete_name} : {str(e)}")
-            # On n'arrête pas la boucle, on passe au suivant
+            print(f"   ❌ Erreur inattendue pour {full_name} : {e}")
             error_count += 1
             continue
 
-    print(f"\n[{datetime.datetime.now()}] --- SYNCHRONISATION TERMINÉE ---")
-    print(f"Résultat : {success_count} succès, {error_count} échecs.")
+    print(f"[{datetime.datetime.now()}] --- TERMINÉ : {success_count} OK, {updated_tokens} Tokens rafraîchis, {error_count} Erreurs ---")
 
 if __name__ == "__main__":
     nightly_sync()

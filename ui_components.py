@@ -36,7 +36,32 @@ def render_tab_stats(texts):
         ).properties(height=400).configure_mark(invalid=None).interactive()
 
         st.altair_chart(chart, use_container_width=True)
-        st.dataframe(df_p[['start_date', 'name', 'distance_km', 'type']], use_container_width=True)
+        st.dataframe(df_p[['start_date', 'name', 'distance_km', 'type']], 
+                    use_container_width=True,
+                    column_config={
+                        # Date : on veut qu'elle soit assez large pour tout voir
+                        "start_date": st.column_config.DatetimeColumn(
+                            "📅 Date", 
+                            format="DD/MM/YYYY HH:mm",
+                            width="small" 
+                        ),
+                        # Nom de la sortie : on lui donne le plus de place (large)
+                        "name": st.column_config.Column(
+                            "Sortie",
+                            width="medium"
+                        ),
+                        # Distance : on peut la réduire car le chiffre est petit
+                        "distance_km": st.column_config.NumberColumn(
+                            "Distance", 
+                            format="%.1f km",
+                        ),
+                        # Type : petite colonne
+                        "type": st.column_config.Column(
+                            "Type",
+                        )
+                    },
+                    hide_index=True
+                )
 
 def common_critria(key_id):
     # --- 1. SÉLECTION DU GROUPE ---
