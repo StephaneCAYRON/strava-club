@@ -309,7 +309,7 @@ def render_tab_sunday(texts):
             if not leaderboard.empty:
                 # Affichage Visuel (Podium)
                 for i, row in leaderboard.iterrows():
-                    rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+                    #rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
                     
                     c1, c2, c3 = st.columns([1, 4, 2])
                     with c1:
