@@ -301,12 +301,11 @@ def render_tab_sunday(texts):
 
             # Agrégation : Compte des sorties ET somme des KM
             leaderboard = df_final.groupby(['id_strava', 'firstname', 'avatar_url']).agg(
-                count=('distance_km', 'count'),
-                total_km=('distance_km', 'sum')
-            ).reset_index()
-            
-            leaderboard = leaderboard.sort_values(['count', 'total_km'], ascending=[False, False])
-
+                count=('distance_km', 'count'), total_km=('distance_km', 'sum')
+            ).sort_values('count', ascending=False).reset_index()
+        
+            leaderboard = leaderboard.sort_values(['count'], ascending=[False])
+            i = 0
             if not leaderboard.empty:
                 # Affichage Visuel (Podium)
                 for i, row in leaderboard.iterrows():
@@ -317,7 +316,7 @@ def render_tab_sunday(texts):
                         st.image(get_safe_avatar_url(row['avatar_url']), width=40)
                     with c2:
                         st.markdown(f"**{rank_icon} {row['firstname']}**")
-                        # st.caption(f"{row['total_km']:.1f} km cumulés") # Petit ajout sympa
+                        st.caption(f"{row['total_km']:.1f} km cumulés") # Petit ajout sympa
                     with c3:
                         # URL du profil de l'athlète
                         strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
@@ -330,12 +329,7 @@ def render_tab_sunday(texts):
                             f'</a>', 
                             unsafe_allow_html=True
                         )
-                    st.divider()
-
-                    
-                    
-                    
-
+                    #st.divider()
 
                 # --- 6. GRAPHIQUE D'ÉVOLUTION CUMULÉE ---
                 st.write("")
