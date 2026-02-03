@@ -19,7 +19,7 @@ else:
     # Pour éviter que l'import plante si on n'a pas les clés (ex: lors du build)
     supabase = None 
 
-MAX_ROWS_FORSQL = 50000
+MAX_ROWS_FORSQL = 100000
 
 def get_last_sync_time():
     

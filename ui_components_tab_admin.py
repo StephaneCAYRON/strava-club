@@ -3,10 +3,39 @@ import io
 import streamlit as st
 from contextlib import redirect_stdout
 from cron_sync import nightly_sync
+from db_operations import *
 
 def render_tab_admin(texts):
     st.title("🛠️ Console d'Administration")
     
+    # --- STATS GÉNÉRALES ---
+    col1, col2, col3 = st.columns(3)
+    
+    total_users = supabase.table("profiles").select("id_strava", count="exact").execute().count
+    total_acts = supabase.table("activities").select("id_activity", count="exact").execute().count
+    
+    col1.metric("Membres inscrits", total_users)
+    col2.metric("Activités totales", total_acts)
+    col3.metric("État du Cron", "❌ KO")
+
+    # --- LISTE DES MEMBRES ET DERNIÈRE ACTIVITÉ ---
+    st.subheader("État des membres")
+    
+    # Requête SQL complexe via Supabase pour voir qui a synchronisé quoi
+    query = """
+        SELECT p.firstname, p.lastname, MAX(a.start_date) as last_ride
+        FROM profiles p
+        LEFT JOIN activities a ON p.id_strava = a.id_strava
+        GROUP BY p.firstname, p.lastname
+    """
+    # Note: Si tu ne veux pas faire de RPC SQL, on peut le faire en Pandas
+    res = supabase.table("profiles").select("firstname, lastname, id_strava").execute()
+    df_admin = pd.DataFrame(res.data)
+    
+    st.dataframe(df_admin, use_container_width=True)
+
+
+
     # --- SECTION SYNCHRO ---
     st.subheader("Synchronisation Manuelle")
     st.info("Ce bouton lance la même procédure que le script qui s'exécute toutes les 2 heures (Refresh tokens + Upsert + Cleanup).")

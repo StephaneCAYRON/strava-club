@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import os
 import concurrent.futures
+import traceback 
+from translation import lang_dict #beurk, no display shall be done in this py
 
 # --- GESTION HYBRIDE DES SECRETS (Streamlit Cloud OU Script Local) ---
 def get_config(key):
@@ -113,8 +115,8 @@ def get_strava_stats(access_token, athlete_id):
             return stats_string, total_val
             
         return "Stats indisponibles", 0
-    except Exception:
-        return "Erreur de connexion", 0
+    except Exception as e:
+        return f"Erreur de connexion : {e} # {traceback.format_exc()}", 0
     
 def get_safe_avatar_url(url):
     """
