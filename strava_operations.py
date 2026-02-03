@@ -107,7 +107,7 @@ def get_safe_avatar_url(url):
     Si l'url est invalide, absente ou relative (ex: 'avatar/athlete/medium.png'),
     retourne l'image par défaut de Strava.
     """
-    DEFAULT_AVATAR = "https://www.strava.com/favicon.ico"
+    DEFAULT_AVATAR = "images/default_athlete.png"
     
     # On vérifie si l'URL existe et si c'est bien une chaîne de caractères
     if not url or not isinstance(url, str):

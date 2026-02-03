@@ -266,7 +266,7 @@ def render_tab_sunday(texts):
         df_sunday = df[
             (df['start_date'].dt.dayofweek == 6) & 
             (df['start_date'].dt.hour >= 5) & 
-            (df['start_date'].dt.hour < 10)
+            (df['start_date'].dt.hour <= 10)
         ].copy()
 
         if not df_sunday.empty:
@@ -309,13 +309,12 @@ def render_tab_sunday(texts):
             if not leaderboard.empty:
                 # Affichage Visuel (Podium)
                 for i, row in leaderboard.iterrows():
-                    #rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
-                    rank_icon = ""
+                    rnk_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
                     c1, c2, c3 = st.columns([1, 4, 2])
                     with c1:
                         st.image(get_safe_avatar_url(row['avatar_url']), width=40)
                     with c2:
-                        st.markdown(f"**{rank_icon} {row['firstname']}**")
+                        st.markdown(f"**{rnk_icon} {row['firstname']}**")
                         st.caption(f"{row['total_km']:.1f} km cumulés") # Petit ajout sympa
                     with c3:
                         # URL du profil de l'athlète
