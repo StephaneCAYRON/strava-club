@@ -24,8 +24,8 @@ from ui_components_tab_admin import render_tab_admin
 st.image("images/LogoACETransparent.png")
 st.info(
     "Version béta -> Voir groupe WhatsApp dédié pour déclarer les bugs."
-    "A venir (si faisable) : **revival** du challenge Segments ! "
-    "🔗 [Consulter les archives 2017](http://www.cycloescalquens.fr/ChallengeStrava2017a.htm)"
+    " A venir (si faisable) : **revival** du challenge Segments ! "
+    " 🔗 [Pour les plus jeunes :-), consulter les archives 2017](http://www.cycloescalquens.fr/ChallengeStrava2017a.htm)"
 )
 
 
