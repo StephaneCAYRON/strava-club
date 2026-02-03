@@ -7,15 +7,21 @@
 # STRAVA_REDIRECT_URI = 'http://localhost:8501'
 
 import streamlit as st
+
+st.set_page_config(page_title="Amicale Cyclo Escalquens", page_icon="images/LogoACETransparent.png", layout="centered")
+
 from db_operations import *
 from strava_operations import *
 from translation import lang_dict
 from ui_components_sidebar import sidebar_component
-from ui_components import render_tab_stats, render_tab_groups, render_tab_leaderboard, render_tab_sunday
+from ui_components import render_tab_stats
+from ui_components_tab_sunday import render_tab_sunday
+from ui_components_tab_km import render_tab_km
+from ui_components_tab_groups import render_tab_groups
 
 # --- CONFIGURATION ---
+#st.set_page_config(page_title="Amicale Cyclo Escalquens", page_icon="images/LogoACETransparent.png", layout="centered")
 st.image("images/LogoACETransparent.png")
-st.set_page_config(page_title="Amicale Cyclo Escalquens", page_icon="images/LogoACETransparent.png", layout="centered")
 st.markdown(
     f"""
     <head>
@@ -85,7 +91,7 @@ if st.session_state.access_token:
     
     with t_stats: render_tab_stats(texts)
     with t_sunday: render_tab_sunday(texts)
-    with t_leader: render_tab_leaderboard(texts)
+    with t_leader: render_tab_km(texts)
     with t_groups: render_tab_groups(texts)
 else:
     # On crée 3 colonnes : [Marge gauche, Bouton, Marge droite]
