@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 from strava_operations import *
 from db_operations import *
 from ui_components import common_critria
@@ -87,6 +88,31 @@ def render_tab_km(texts):
                     )
                 if i == 2:    
                     break
+
+            # --- 6. GRAPHIQUE D'ÉVOLUTION CUMULÉE ---
+            st.write("")
+            st.subheader("Progression mensuelle")
+            
+            # Préparation des données pour le graphique (on utilise df_sunday qui contient toute l'année)
+            # 1. On groupe par athlète et par mois
+            df_chart = df_year.groupby(['firstname', 'Mois_Num', 'Mois']).size().reset_index(name='monthly_count')
+            
+            # 2. On calcule le cumul par athlète au fil des mois
+            df_chart = df_chart.sort_values(['firstname', 'Mois_Num'])
+            df_chart['cumul_km'] = df_chart.groupby('firstname')['monthly_count'].cumsum()
+
+            # 3. Création du graphique Altair
+            line_chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                x=alt.X('Mois_Num:O', title="Mois", axis=alt.Axis(labelAngle=0)),
+                y=alt.Y('cumul_km:Q', title="Cumul des kms"),
+                color=alt.Color('firstname:N', title="Athlète"),
+                tooltip=['firstname', 'Mois', 'cumul_km']
+            ).properties(
+                height=350
+            ).interactive()
+
+            st.altair_chart(line_chart, use_container_width=True)        
+
 
             with st.expander("Classement complet", True):
                 leaderboard['Athlete'] = [

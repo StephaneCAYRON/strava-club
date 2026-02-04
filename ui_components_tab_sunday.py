@@ -90,7 +90,7 @@ def render_tab_sunday(texts):
 
                 # --- 6. GRAPHIQUE D'ÉVOLUTION CUMULÉE ---
                 st.write("")
-                st.subheader("Progression de l'assiduité")
+                st.subheader("Progression mensuelle")
                 
                 # Préparation des données pour le graphique (on utilise df_sunday qui contient toute l'année)
                 # 1. On groupe par athlète et par mois
