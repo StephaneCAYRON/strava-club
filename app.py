@@ -25,9 +25,8 @@ col_header1, col_header2, col_header3 = st.columns([1, 2, 1])
 with col_header2:
     st.image("images/LogoACETransparent.png", width=400)
 st.info(
-    "Version béta -> Voir groupe WhatsApp dédié pour déclarer les bugs."
-    " A venir (si faisable) : **revival** du challenge Segments ! "
-    " 🔗 [Pour les plus jeunes :-), consulter les archives 2017](http://www.cycloescalquens.fr/ChallengeStrava2017a.htm)"
+    "Version béta -> Voir groupe WhatsApp dédié pour déclarer les bugs, proposer des idées, etc."
+    " 🔗(https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE)"
 )
 
 
