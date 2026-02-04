@@ -25,18 +25,5 @@ def sidebar_component(texts):
 
     athlete = st.session_state.athlete
     st.sidebar.image(get_safe_avatar_url(athlete.get("profile")), width=100)
-    st.sidebar.success(f"{texts['sidebar_connected']} {athlete.get('firstname')}")
-
-    if st.sidebar.button(f"{texts['logout']}", use_container_width=True):
-        st.session_state.access_token = None
-        st.session_state.auto_sync_done = False
-        st.rerun()
-
-    if st.sidebar.button(texts["sync_btn"], use_container_width=True):
-        from strava_operations import fetch_all_activities_parallel
-        with st.spinner(texts["sync_spinner"]):
-            all_activities = fetch_all_activities_parallel(st.session_state.access_token)
-            if all_activities:
-                sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
-                st.sidebar.success(texts["sync_success"])
-                st.rerun()
+    #st.sidebar.success(f"{texts['sidebar_connected']} {athlete.get('firstname')}")
+    

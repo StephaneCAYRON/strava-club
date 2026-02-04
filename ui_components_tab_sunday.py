@@ -85,6 +85,8 @@ def render_tab_sunday(texts):
                             f'</a>', 
                             unsafe_allow_html=True
                         )
+                    if i == 2:
+                        break
 
                 # --- 6. GRAPHIQUE D'ÉVOLUTION CUMULÉE ---
                 st.write("")
@@ -109,18 +111,23 @@ def render_tab_sunday(texts):
                 ).interactive()
 
                 st.altair_chart(line_chart, use_container_width=True)
-
-                # --- LE TABLEAU DÉTAILLÉ (AJOUTÉ ICI) ---
-                with st.expander("Voir le tableau détaillé"):
+               
+                with st.expander("Classement complet", True):
+                    leaderboard['Athlete'] = [
+                        f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                        for i, row in leaderboard.iterrows()
+                    ]
                     st.dataframe(
-                        leaderboard[['firstname', 'count', 'total_km']], 
+                        leaderboard[['avatar_url','Athlete', 'count', 'total_km']], 
+                        hide_index=True,
                         use_container_width=True,
                         column_config={
-                            "firstname": "Athlète",
-                            "count": st.column_config.NumberColumn("Sorties Dominicales", format="%d 🚴"),
+                            "avatar_url": st.column_config.ImageColumn("", width=10),
+                            "Athlete": st.column_config.TextColumn("Rang & Nom"),
+                            #"count": st.column_config.NumberColumn("Sorties Dominicales", format="%d 🚴"),
+                            "count": st.column_config.NumberColumn("Sorties Dominicales", format="%d"),
                             "total_km": st.column_config.NumberColumn("Distance Cumulée", format="%.1f km")
-                        },
-                        hide_index=True # Plus propre sans l'index 0,1,2...
+                        }
                     )
             else:
                 st.warning(f"Aucune sortie dominicale en {selected_period}.")

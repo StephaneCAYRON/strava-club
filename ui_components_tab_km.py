@@ -32,10 +32,6 @@ def render_tab_km(texts):
         options_list = [option_all] + months_in_data
         
         # Sélection par défaut : dernier mois actif -> remplacé par toute l'année
-        # default_index = len(options_list) - 1 if len(months_in_data) > 0 else 0
-        # selected_period = col_filter2.selectbox("Période", options_list, index=default_index)
-        # selected_period = col_filter2.selectbox("Période", options_list, index=0)
-        # selected_period = st.pills("Mois", options_list, selection_mode="single", default=options_list[0])
         selected_period =st.segmented_control("Mois", options_list, selection_mode="single", default=options_list[0])
 
         # --- LOGIQUE DE FILTRAGE ---
@@ -55,7 +51,7 @@ def render_tab_km(texts):
             total_rides=('distance_km', 'count') # Compte le nombre de lignes
         ).sort_values('total_km', ascending=False).reset_index()
 
-        st.markdown(f"### Kilométrage : {title_suffix}")
+        st.markdown(f"### Cumul kilométrage : {title_suffix}")
         
         if not leaderboard.empty:
             
@@ -89,16 +85,21 @@ def render_tab_km(texts):
                         f'</a>', 
                         unsafe_allow_html=True
                     )
-                    
-                
-                #st.divider() # Petite ligne de séparation entre les athlètes
+                if i == 2:    
+                    break
 
-            with st.expander("Voir le tableau détaillé"):
+            with st.expander("Classement complet", True):
+                leaderboard['Athlete'] = [
+                    f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                    for i, row in leaderboard.iterrows()
+                ]
                 st.dataframe(
-                    leaderboard[['firstname', 'total_km', 'total_rides']], 
+                    leaderboard[['avatar_url','Athlete', 'total_km', 'total_rides']], 
+                    hide_index=True,
                     use_container_width=True,
                     column_config={
-                        "firstname": "Athlète",
+                        "avatar_url": st.column_config.ImageColumn("", width=10),
+                        "Athlete": st.column_config.TextColumn("Rang & Nom"),
                         "total_km": st.column_config.NumberColumn("Distance (km)", format="%.1f"),
                         "total_rides": st.column_config.NumberColumn("Sorties")
                     }

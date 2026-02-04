@@ -70,7 +70,7 @@ def common_critria(key_id):
     my_approved = [g for g in m_groups.data if g['status'] == 'approved']
     
     if not my_approved:
-        st.info(texts["no_group"])
+        st.info("no_group")
         return
     
     group_dict = {g['groups']['name']: g for g in my_approved}
@@ -84,7 +84,8 @@ def common_critria(key_id):
             options=group_names, 
             selection_mode="single", 
             default=group_names[0],
-            key="pills_group" + key_id
+            key="pills_group" + key_id,
+            disabled=True
         )
     selected_g = group_dict[selected_name]
 

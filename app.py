@@ -21,7 +21,9 @@ from ui_components_tab_groups import render_tab_groups
 from ui_components_tab_admin import render_tab_admin
 
 # --- CONFIGURATION ---
-st.image("images/LogoACETransparent.png")
+col_header1, col_header2, col_header3 = st.columns([1, 2, 1])
+with col_header2:
+    st.image("images/LogoACETransparent.png", width=400)
 st.info(
     "Version béta -> Voir groupe WhatsApp dédié pour déclarer les bugs."
     " A venir (si faisable) : **revival** du challenge Segments ! "
@@ -84,18 +86,42 @@ if st.session_state.access_token:
     ADMIN_ID = 5251772
     tabs_names = [texts["tab_statsPerso"], texts["tab_sunday"],texts["leaderboard_tab"], texts["group_tab"]]
     
-    # Si c'est l'admin, on ajoute l'onglet
-    if st.session_state.athlete['id'] == ADMIN_ID:
-        tabs_names.append("🛠️ Admin")
-    #t_stats, t_sunday, t_leader, t_groups, t_admin = st.tabs(tabs_names)
-    tabs = st.tabs(tabs_names)
+    # Rendu de la Sidebar avec Radio ou Selectbox
+    # On définit les options du menu
+    # On utilise un dictionnaire pour mapper les noms du menu aux fonctions de rendu
+    pages = {
+        texts["tab_statsPerso"]: render_tab_stats,
+        texts["tab_sunday"]: render_tab_sunday,
+        texts["leaderboard_tab"]: render_tab_km,
+        texts["group_tab"]: render_tab_groups
+    }
 
-    with tabs[0]: render_tab_stats(texts)
-    with tabs[1]: render_tab_sunday(texts)
-    with tabs[2]: render_tab_km(texts)
-    with tabs[3]: render_tab_groups(texts)
+
     if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
-          with tabs[4]: render_tab_admin(texts)
+        pages["🛠️ Console Admin"] = render_tab_admin
+
+    with st.sidebar:
+        st.divider()
+        selection = st.radio("", list(pages.keys()))
+        st.divider()
+        
+        if st.button(texts["logout"], use_container_width=True):
+            st.session_state.access_token = None
+            st.session_state.auto_sync_done = False
+            st.rerun()
+
+        if st.button(texts["sync_btn"], use_container_width=True):
+            with st.spinner(texts["sync_spinner"]):
+                all_activities = fetch_all_activities_parallel(st.session_state.access_token)
+                if all_activities:
+                    sync_profile_and_activities(athlete, all_activities, st.session_state.refresh_token)
+                    st.sidebar.success(texts["sync_success"])
+                    st.rerun()
+
+    # APPEL DE LA FONCTION DE RENDU SELON LA SÉLECTION
+    render_func = pages[selection]
+    render_func(texts)  
+
 else:
     # On crée 3 colonnes : [Marge gauche, Bouton, Marge droite]
     # Le ratio [1, 2, 1] signifie que le bouton occupe 50% de la largeur centrale
