@@ -38,6 +38,27 @@ for key in ['access_token', 'refresh_token', 'athlete', 'lang', 'auto_sync_done'
 texts = lang_dict[st.session_state.lang]
 
 
+def redirect_button(url, text):
+    st.markdown(
+        f"""
+        <a href="{url}" target="_self">
+            <button style="
+                width: 100%;
+                background-color: #ff4b4b;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: bold;
+                ">
+                {text}
+            </button>
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
+
 # --- FONCTION DE MISE À JOUR UI ---
 def refresh_local_data():
     if st.session_state.athlete:
@@ -127,10 +148,14 @@ else:
     left_co, cent_co, last_co = st.columns([1, 2, 1])
 
     with cent_co:
-        st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
+        #st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
+        redirect_button(get_strava_auth_url(), texts["connect"])
     
 
 st.markdown("---")
 col1, col2, col3 = st.columns([3, 2, 3])
 with col2:
     st.image("https://developers.strava.com/images/api_logo_pwrdBy_strava_horiz_light.png", width=150)
+
+
+
