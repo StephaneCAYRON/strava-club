@@ -105,7 +105,7 @@ if st.session_state.access_token:
         selection = st.radio("", list(pages.keys()))
         st.divider()
         
-        if st.button(texts["logout"], use_container_width=True):
+        if st.button("Se déconnecter", use_container_width=True):
             st.session_state.access_token = None
             st.session_state.auto_sync_done = False
             st.rerun()
