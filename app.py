@@ -148,8 +148,8 @@ else:
     left_co, cent_co, last_co = st.columns([1, 2, 1])
 
     with cent_co:
-        #st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
-        redirect_button(get_strava_auth_url(), texts["connect"])
+        st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
+        #redirect_button(get_strava_auth_url(), texts["connect"])
     
 
 st.markdown("---")
