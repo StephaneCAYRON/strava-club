@@ -121,22 +121,27 @@ def render_tab_km(texts):
             st.altair_chart(line_chart, use_container_width=True)    
 
 
-            with st.expander("Classement complet", True):
-                leaderboard['Athlete'] = [
-                    f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
-                    for i, row in leaderboard.iterrows()
-                ]
-                st.dataframe(
-                    leaderboard[['avatar_url','Athlete', 'total_km', 'total_rides']], 
-                    hide_index=True,
-                    use_container_width=True,
-                    column_config={
-                        "avatar_url": st.column_config.ImageColumn("", width=10),
-                        "Athlete": st.column_config.TextColumn("Rang & Nom"),
-                        "total_km": st.column_config.NumberColumn("Distance (km)", format="%.1f"),
-                        "total_rides": st.column_config.NumberColumn("Sorties")
-                    }
-                )
+            #with st.expander("Classement complet", True):
+            # CALCUL DE LA HAUTEUR : 
+            # Environ 35 pixels par ligne + 40 pixels pour l'en-tête
+            nb_lignes = len(leaderboard)
+            hauteur_calculee = (nb_lignes * 35) + 40
+            leaderboard['Athlete'] = [
+                f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                for i, row in leaderboard.iterrows()
+            ]
+            st.dataframe(
+                leaderboard[['avatar_url','Athlete', 'total_km', 'total_rides']], 
+                hide_index=True,
+                use_container_width=True,
+                height=hauteur_calculee,
+                column_config={
+                    "avatar_url": st.column_config.ImageColumn("", width=10),
+                    "Athlete": st.column_config.TextColumn("Rang & Nom"),
+                    "total_km": st.column_config.NumberColumn("Distance (km)", format="%.1f"),
+                    "total_rides": st.column_config.NumberColumn("Sorties")
+                }
+            )
         else:
             st.warning("Aucune activité trouvée pour cette période.")
 

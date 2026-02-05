@@ -113,7 +113,13 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
             if yesForOnlyRecentFalseForAll:
                 gathered_activities = fetch_page(new_access, page=1, per_page=30)
             else:
-                gathered_activities = fetch_all_activities_parallel(new_access)
+                total, recent = get_athlete_summary(athlete_id)
+                if total < 100:
+                    print(f"👉 Moins de 100 (total:{total}), full sync launched {full_name} ({athlete_id})")
+                    gathered_activities = fetch_all_activities_parallel(new_access)
+                else:
+                    gathered_activities = False
+                    print(f"👉 Plus de 100 (total:{total}), full sync skipped {full_name} ({athlete_id})")    
 
             if gathered_activities:
                 # --- D. RECONSTRUCTION DE L'OBJET ATHLETE ---
@@ -131,7 +137,7 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
                 print(f"   ✅ {len(gathered_activities)} activités vérifiées/synchronisées.")
                 success_count += 1
 
-                #break
+                break
 
             else:
                 print("   ℹ️ Aucune activité récente trouvée.")

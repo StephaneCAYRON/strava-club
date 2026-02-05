@@ -4,6 +4,7 @@ import streamlit as st
 from contextlib import redirect_stdout
 from cron_sync import nightly_sync
 from db_operations import *
+from strava_operations import *
 
 def render_tab_admin(texts):
     st.title("🛠️ Console d'Administration")
@@ -21,20 +22,34 @@ def render_tab_admin(texts):
     # --- LISTE DES MEMBRES ET DERNIÈRE ACTIVITÉ ---
     st.subheader("État des membres")
     
-    # Requête SQL complexe via Supabase pour voir qui a synchronisé quoi
-    query = """
-        SELECT p.firstname, p.lastname, MAX(a.start_date) as last_ride
-        FROM profiles p
-        LEFT JOIN activities a ON p.id_strava = a.id_strava
-        GROUP BY p.firstname, p.lastname
-    """
     # Note: Si tu ne veux pas faire de RPC SQL, on peut le faire en Pandas
-    res = supabase.table("profiles").select("firstname, lastname, id_strava").execute()
+    res = supabase.table("profiles").select("firstname, lastname, id_strava, avatar_url").execute()
     df_admin = pd.DataFrame(res.data)
+    # Créer l'URL du profil Strava à partir de l'ID
+    df_admin['strava_link'] = df_admin['id_strava'].apply(lambda x: f"https://www.strava.com/athletes/{x}")
+    # 3. Organisation des colonnes
+    df_admin = df_admin[['firstname', 'lastname', 'strava_link', 'id_strava']]
+    # 4. Affichage avec configuration avancée
+    st.dataframe(
+        df_admin,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "avatar": st.column_config.ImageColumn("Photo", width="small"),
+            "firstname": "Prénom",
+            "lastname": "Nom",
+            "strava_link": st.column_config.LinkColumn(
+                "Profil Strava",
+                help="Cliquer pour ouvrir le profil Strava",
+                validate=r"^https://www.strava.com/athletes/.*",
+                display_text="🔗 Voir sur Strava" # Tu peux mettre une icône ou un texte
+            ),
+            "id_strava": st.column_config.TextColumn("ID Strava")
+        }
+    )
     
-    st.dataframe(df_admin, use_container_width=True)
-
-
+    
+    #st.dataframe(df_admin, use_container_width=True)
 
     # --- SECTION SYNCHRO ---
     st.subheader("Synchronisation Manuelle")
@@ -44,7 +59,7 @@ def render_tab_admin(texts):
     # On utilise le session_state pour que la valeur survive au rerun du bouton
     is_partial_sync = st.checkbox(
         "🔄 Partial Sync (derniers jours)", 
-        value=False,
+        value=True,
         help="Si décoché, récupère toutes les activités. Si coché, synchro partielle (derniers jours)."
     )
     st.info(f"Le bouton lancera : `nightly_sync({is_partial_sync})`.")

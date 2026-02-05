@@ -117,23 +117,32 @@ def render_tab_sunday(texts):
 
                 st.altair_chart(line_chart, use_container_width=True)
                
-                with st.expander("Classement complet", True):
-                    leaderboard['Athlete'] = [
-                        f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
-                        for i, row in leaderboard.iterrows()
-                    ]
-                    st.dataframe(
-                        leaderboard[['avatar_url','Athlete', 'count', 'total_km']], 
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "avatar_url": st.column_config.ImageColumn("", width=10),
-                            "Athlete": st.column_config.TextColumn("Rang & Nom"),
-                            #"count": st.column_config.NumberColumn("Sorties Dominicales", format="%d 🚴"),
-                            "count": st.column_config.NumberColumn("Sorties Dominicales", format="%d"),
-                            "total_km": st.column_config.NumberColumn("Distance Cumulée", format="%.1f km")
-                        }
-                    )
+                #with st.expander("Classement complet", True):
+                #with st.expander("Classement complet", True):
+                # CALCUL DE LA HAUTEUR : 
+                # Environ 35 pixels par ligne + 40 pixels pour l'en-tête
+                nb_lignes = len(leaderboard)
+                hauteur_calculee = (nb_lignes * 35) + 40
+                leaderboard['Athlete'] = [
+                    f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                    for i, row in leaderboard.iterrows()
+                ]
+
+                #hauteur_calculee = 4000
+
+                st.dataframe(
+                    leaderboard[['avatar_url','Athlete', 'count', 'total_km']], 
+                    hide_index=True,
+                    height=hauteur_calculee,
+                    use_container_width=True,
+                    column_config={
+                        "avatar_url": st.column_config.ImageColumn("", width=10),
+                        "Athlete": st.column_config.TextColumn("Rang & Nom"),
+                        #"count": st.column_config.NumberColumn("Sorties Dominicales", format="%d 🚴"),
+                        "count": st.column_config.NumberColumn("Sorties Dominicales", format="%d"),
+                        "total_km": st.column_config.NumberColumn("Distance Cumulée", format="%.1f km")
+                    }
+                )
             else:
                 st.warning(f"Aucune sortie dominicale en {selected_period}.")
         else:

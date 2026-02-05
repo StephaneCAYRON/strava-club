@@ -44,6 +44,7 @@ def sync_profile_and_activities(athlete, activities, refresh_token):
             "firstname": athlete.get("firstname"),
             "lastname": athlete.get("lastname"),
             "refresh_token": refresh_token,
+            #"scope": accepted_scopes, # <--- ON AJOUTE LE SCOPE ICI
             "avatar_url": athlete.get("profile_medium")
         }
         supabase.table("profiles").upsert(profile_data).execute()
