@@ -19,6 +19,9 @@ from ui_components_tab_sunday import render_tab_sunday
 from ui_components_tab_km import render_tab_km
 from ui_components_tab_groups import render_tab_groups
 from ui_components_tab_admin import render_tab_admin
+from ui_components_tab_elevation import render_tab_dplus
+
+ADMIN_ID = 5251772
 
 # --- CONFIGURATION ---
 col_header1, col_header2, col_header3 = st.columns([1, 2, 1])
@@ -81,6 +84,11 @@ if st.session_state.access_token:
     athlete = st.session_state.athlete
     
     # --- LOGIQUE DE SYNCHRONISATION OPTIMISÉE ---
+    
+    #if st.session_state.athlete['id'] == ADMIN_ID:
+    #    st.info(f"ADMIN MODE: {st.session_state.athlete['id']}-{st.session_state.athlete['firstname']}")
+    #if not st.session_state.auto_sync_done and not (st.session_state.athlete['id'] == ADMIN_ID):
+    
     if not st.session_state.auto_sync_done:
         with st.spinner(texts["auto_sync"]):
             # 1. On récupère uniquement les 100 plus récentes
@@ -103,19 +111,18 @@ if st.session_state.access_token:
         st.rerun()
 
     # Affichage des Onglets
-    ADMIN_ID = 5251772
     tabs_names = [texts["tab_statsPerso"], texts["tab_sunday"],texts["leaderboard_tab"], texts["group_tab"]]
     
     # Rendu de la Sidebar avec Radio ou Selectbox
     # On définit les options du menu
     # On utilise un dictionnaire pour mapper les noms du menu aux fonctions de rendu
     pages = {
-        texts["tab_statsPerso"]: render_tab_stats,
         texts["tab_sunday"]: render_tab_sunday,
+        texts["dplus_tab"]: render_tab_dplus,
         texts["leaderboard_tab"]: render_tab_km,
+        texts["tab_statsPerso"]: render_tab_stats,
         texts["group_tab"]: render_tab_groups
     }
-
 
     if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
         pages["🛠️ Console Admin"] = render_tab_admin

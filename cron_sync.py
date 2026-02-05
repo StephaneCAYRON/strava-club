@@ -2,6 +2,8 @@ import os
 import datetime
 import traceback
 import requests
+from db_operations import *
+from strava_operations import *
 from dotenv import load_dotenv
 
 # --- 1. CONFIGURATION DE L'ENVIRONNEMENT ---
@@ -48,7 +50,7 @@ def exchange_refresh_token_local(refresh_token):
         print(f"⚠️ Exception réseau lors du refresh : {e}")
         return None
 
-def nightly_sync():
+def nightly_sync(yesForOnlyRecentFalseForAll):
     print(f"\n[{datetime.datetime.now()}] --- 🚀 DÉBUT DE LA SYNCHRONISATION BATCH ---")
     
     # 1. Vérification de la connexion DB
@@ -108,9 +110,12 @@ def nightly_sync():
             # --- C. RÉCUPÉRATION DES ACTIVITÉS ---
             # On récupère les 30 dernières activités (permet de mettre à jour 
             # les titres modifiés ou descriptions des sorties récentes)
-            recent_activities = fetch_page(new_access, page=1, per_page=30)
-            
-            if recent_activities:
+            if yesForOnlyRecentFalseForAll:
+                gathered_activities = fetch_page(new_access, page=1, per_page=30)
+            else:
+                gathered_activities = fetch_all_activities_parallel(new_access)
+
+            if gathered_activities:
                 # --- D. RECONSTRUCTION DE L'OBJET ATHLETE ---
                 # db_operations attend un dictionnaire style Strava
                 athlete_obj = {
@@ -122,9 +127,12 @@ def nightly_sync():
 
                 # --- E. SYNCHRONISATION (UPSERT) ---
                 # Cette fonction va mettre à jour les activités existantes et créer les nouvelles
-                sync_profile_and_activities(athlete_obj, recent_activities, new_refresh)
-                print(f"   ✅ {len(recent_activities)} activités vérifiées/synchronisées.")
+                sync_profile_and_activities(athlete_obj, gathered_activities, new_refresh)
+                print(f"   ✅ {len(gathered_activities)} activités vérifiées/synchronisées.")
                 success_count += 1
+
+                #break
+
             else:
                 print("   ℹ️ Aucune activité récente trouvée.")
 
@@ -135,5 +143,6 @@ def nightly_sync():
 
     print(f"[{datetime.datetime.now()}] --- TERMINÉ : {success_count} OK, {updated_tokens} Tokens rafraîchis, {error_count} Erreurs ---")
 
+
 if __name__ == "__main__":
-    nightly_sync()
+    nightly_sync(True)

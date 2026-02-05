@@ -10,11 +10,16 @@ def render_tab_sunday(texts):
     
     # --- 1. SÉLECTION  GROUPE et ANNEE ---
     selected_g, selected_year = common_critria("sunday")
+    
+    if selected_g == "":
+        st.info("No group yet")
+        return
 
     # --- 2. RÉCUPÉRATION DES DONNÉES ---
     res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
     
     if res.data:
+        
         df = pd.DataFrame(res.data)
         df['start_date'] = pd.to_datetime(df['start_date'])
 
@@ -107,7 +112,7 @@ def render_tab_sunday(texts):
                     color=alt.Color('firstname:N', title="Athlète"),
                     tooltip=['firstname', 'Mois', 'cumul_sorties']
                 ).properties(
-                    height=350
+                    height=500
                 ).interactive()
 
                 st.altair_chart(line_chart, use_container_width=True)

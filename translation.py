@@ -24,6 +24,7 @@ lang_dict = {
         "my_groups": "👥 Mes groupes",
         "no_group": "Vous n'êtes membre d'aucun groupe.",
         "leaderboard_tab": "🛣️  Challenge : stakhanoviste",
+        "dplus_tab": "🏔️  Challenge : frelon, D+!",
         "group_tab":"👥 Mes groupes",
         "tab_statsPerso":"📍Mes sorties récentes",
         "request_sent" : "Demande envoyée",

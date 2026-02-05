@@ -67,11 +67,14 @@ def common_critria(key_id):
     # --- 1. SÉLECTION DU GROUPE ---
     athlete_id = st.session_state.athlete['id']
     m_groups = get_user_memberships(athlete_id)
+    #st.info(f"DEBUG m_groups:{m_groups}")
     my_approved = [g for g in m_groups.data if g['status'] == 'approved']
     
     if not my_approved:
-        st.info("no_group")
-        return
+        #st.info("no_group")
+        selected_g = ""
+        selected_year = 2026 
+        return selected_g, selected_year
     
     group_dict = {g['groups']['name']: g for g in my_approved}
     group_names = list(group_dict.keys())

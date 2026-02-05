@@ -55,6 +55,7 @@ def sync_profile_and_activities(athlete, activities, refresh_token):
                 "id_strava": athlete["id"],
                 "name": a["name"],
                 "distance_km": a["distance"] / 1000,
+                "total_elevation_gain": a['total_elevation_gain'], # <--- AJOUT
                 "type": a["type"],
                 "start_date": a["start_date"]
             } for a in activities]
@@ -102,7 +103,7 @@ def get_leaderboard_by_group_by_year(group_id, year):
 def get_leaderboard_by_group(group_id):
     """Récupère les activités Ride pour un groupe, incluant la date pour le tri"""
     return supabase.table("group_activities")\
-        .select("firstname, avatar_url, distance_km, start_date, type")\
+        .select("firstname, avatar_url, distance_km, total_elevation_gain, start_date, type")\
         .eq("group_id", group_id)\
         .eq("type", "Ride")\
         .limit(MAX_ROWS_FORSQL)\

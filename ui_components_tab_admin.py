@@ -40,12 +40,21 @@ def render_tab_admin(texts):
     st.subheader("Synchronisation Manuelle")
     st.info("Ce bouton lance la même procédure que le script qui s'exécute toutes les 2 heures (Refresh tokens + Upsert + Cleanup).")
 
+    # 1. AJOUT DE LA CHECKBOX
+    # On utilise le session_state pour que la valeur survive au rerun du bouton
+    is_partial_sync = st.checkbox(
+        "🔄 Partial Sync (derniers jours)", 
+        value=False,
+        help="Si décoché, récupère toutes les activités. Si coché, synchro partielle (derniers jours)."
+    )
+    st.info(f"Le bouton lancera : `nightly_sync({is_partial_sync})`.")
+
     # Initialisation de l'état du bouton
     if "sync_running" not in st.session_state:
         st.session_state.sync_running = False
 
     # Le bouton se désactive si la synchro est en cours
-    btn_label = "⏳ Synchro en cours..." if st.session_state.sync_running else "🚀 Lancer la synchro globale"
+    btn_label = "⏳ Synchro en cours..." if st.session_state.sync_running else "🚀 Lancer la synchro"
     
     if st.button(btn_label, disabled=st.session_state.sync_running):
         st.session_state.sync_running = True
@@ -66,7 +75,8 @@ def render_tab_admin(texts):
                     # Note: pour du vrai temps réel ligne par ligne, 
                     # il faudrait modifier nightly_sync en generateur, 
                     # mais redirect_stdout fonctionne très bien ici.
-                    nightly_sync()
+                    
+                    nightly_sync(is_partial_sync)
                     
                 # Affichage final des logs dans un bloc de code
                 log_area.code(output.getvalue())
