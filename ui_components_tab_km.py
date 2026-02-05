@@ -17,6 +17,17 @@ def render_tab_km(texts):
 
     res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
     
+    # --- AJOUT TEMPORAIRE POUR DEBUG ---
+    #st.write(f"🔍 DEBUG ANNEE {selected_year} - Groupe ID: {selected_g['group_id']}")
+    #st.write(f"Lignes brutes reçues de la DB : {len(res.data) if res.data else 0}")
+    #if res.data:
+    #        df_debug = pd.DataFrame(res.data)
+    #        # Vérifions si Stephane est dedans
+    #        steph = df_debug[df_debug['firstname'] == 'Stephane']
+    #        st.write("Données pour Stephane dans le DataFrame :")
+    #        st.dataframe(steph)
+    # -----------------------------------
+
     if res.data:
         df = pd.DataFrame(res.data)
         
