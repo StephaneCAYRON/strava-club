@@ -20,10 +20,13 @@ def sidebar_component(texts):
                 st.toast("Language switched to English! 🇬🇧")
                 st.rerun()
     
-    
-    st.sidebar.image("https://developers.strava.com/images/api_logo_pwrdBy_strava_horiz_light.png", width=150)
 
-    athlete = st.session_state.athlete
-    st.sidebar.image(get_safe_avatar_url(athlete.get("profile")), width=100)
-    #st.sidebar.success(f"{texts['sidebar_connected']} {athlete.get('firstname')}")
+    c1, c2, c3 = st.sidebar.columns([1, 2, 1])
+    with c2:
+        st.image("https://developers.strava.com/images/api_logo_pwrdBy_strava_horiz_light.png", width=150)
+        athlete = st.session_state.athlete
+        st.image(get_safe_avatar_url(athlete.get("profile")))
+        #st.success(f"{texts['sidebar_connected']} {athlete.get('firstname')}")
+        
+        
     
