@@ -14,7 +14,7 @@ def render_tab_regularity(texts):
     """
     
     st.markdown("### 📅 Challenge Régularité")
-    st.caption("Le principe : S'il y a **10 participants** actifs dans le mois, le 1er gagne **10 pts**, le 2ème **9 pts**... et le 10ème **1 pt**.")
+    st.caption("Le principe : s'il y a **10 participants** actifs dans le mois, le 1er gagne **10 pts**, le 2ème **9 pts**... et le 10ème **1 pt**.")
 
     # --- 1. SÉLECTION GROUPE et ANNEE ---
     selected_g, selected_year = common_critria("regularity")
@@ -153,7 +153,7 @@ def render_tab_regularity(texts):
             """
 
             # B. TABLEAU DÉTAILLÉ (PIVOT)
-            st.markdown("#### 🗓️ Détail : points gagnés par mois (sera complété avec les kms correspondants)")
+            #st.markdown("#### 🗓️ Détail : points gagnés par mois (sera complété avec les kms correspondants)")
             
             # Création du Pivot Table : Lignes=Noms, Colonnes=Mois, Valeurs=Points
             pivot_df1 = df_scores.pivot_table(
@@ -188,6 +188,7 @@ def render_tab_regularity(texts):
             hauteur_calculee = (nb_lignes * 35) + 40
 
             # Affichage
+            """
             st.dataframe(
                 pivot_df1, 
                 use_container_width=True,
@@ -200,7 +201,7 @@ def render_tab_regularity(texts):
                     ) for col in pivot_df1.columns
                 }
             )
-
+            """
             # Affichage du tableau final
             """
             st.dataframe(
@@ -212,6 +213,45 @@ def render_tab_regularity(texts):
                 }
             )
             """
+
+            # --- 6. TABLEAU DÉTAILLÉ (LISTE VERTICALE POUR MOBILE) ---
+            st.divider()
+            st.markdown("#### 📜 Historique détaillé par mois")
+
+            # On trie d'abord par Mois (numérique) puis par Points (décroissant)
+            df_details = df_scores.sort_values(
+                by=['month_num', 'points_month'], 
+                ascending=[True, False]
+            ).copy()
+
+            # On prépare une colonne propre pour le mois
+            # (ex: "01 - January") pour assurer un bon tri dans l'affichage
+            df_details['Mois'] = df_details.apply(
+                lambda x: f"{str(x['month_num']).zfill(2)} - {x['month_name']}", axis=1
+            )
+
+            # On renomme pour l'affichage
+            df_details = df_details.rename(columns={
+                'firstname': 'Athlète',
+                'display_text': 'Résultat'
+            })
+
+            # Calcul de la hauteur pour éviter le double scroll
+            nb_lignes = len(df_details)
+            hauteur_tab = (nb_lignes * 35) + 40
+
+            st.dataframe(
+                df_details[['Mois', 'Athlète', 'Résultat']],
+                use_container_width=True,
+                hide_index=True,
+                height=hauteur_tab,
+                column_config={
+                    "Mois": st.column_config.TextColumn("Mois", width="medium"),
+                    "Athlète": st.column_config.TextColumn("Athlète", width="medium"),
+                    "Résultat": st.column_config.TextColumn("Points (KM)", width="large"),
+                }
+)
+
 
         else:
             st.warning("Pas assez de données pour calculer la régularité.")
