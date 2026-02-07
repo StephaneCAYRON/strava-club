@@ -111,7 +111,7 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
             # On récupère les 30 dernières activités (permet de mettre à jour 
             # les titres modifiés ou descriptions des sorties récentes)
             if yesForOnlyRecentFalseForAll:
-                gathered_activities = fetch_page(new_access, page=1, per_page=30)
+                gathered_activities = fetch_page(new_access, page=1, per_page=100)
             else:
                 total, recent = get_athlete_summary(athlete_id)
                 if total < 100:
