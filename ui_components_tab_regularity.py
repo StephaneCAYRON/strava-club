@@ -184,10 +184,14 @@ def render_tab_regularity(texts):
             months_order = df_scores.sort_values('month_num')['month_name'].unique()
             pivot_df1 = pivot_df1[months_order]
 
+            nb_lignes = len(final_leaderboard)
+            hauteur_calculee = (nb_lignes * 35) + 40
+
             # Affichage
             st.dataframe(
                 pivot_df1, 
                 use_container_width=True,
+                height=hauteur_calculee,
                 column_config={
                     col: st.column_config.NumberColumn(
                         col, 
