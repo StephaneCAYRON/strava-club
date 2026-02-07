@@ -3,7 +3,7 @@ name: Strava Nightly Sync
 on:
   schedule:
     # S'exécute toutes les 2 heures (0h, 2h, 4h, etc.)
-    - cron: '0 */2 * * *'
+    - cron: '0 */12 * * *'
   workflow_dispatch: # Permet de lancer le script manuellement pour tester
 
 jobs:
