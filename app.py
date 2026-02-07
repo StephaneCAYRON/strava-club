@@ -94,7 +94,7 @@ if st.session_state.access_token:
         with st.spinner(texts["auto_sync"]):
             # 1. On récupère uniquement les 100 plus récentes
             # st.info(texts["auto_sync"])
-            latest_activities = fetch_page(st.session_state.access_token, page=1, per_page=100)
+            latest_activities = fetch_page(st.session_state.access_token, page=1, per_page=10)
             if latest_activities:
                 sync_profile_and_activities(athlete, latest_activities, st.session_state.refresh_token)
                 refresh_local_data() 
