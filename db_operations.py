@@ -12,12 +12,12 @@ except (FileNotFoundError, AttributeError, KeyError):
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-    # --- DEBUG START ---
-    # Affiche si les variables sont présentes (OUI/NON)
-    url_check = "OUI" if os.getenv("SUPABASE_URL") else "NON"
-    key_check = "OUI" if os.getenv("SUPABASE_KEY") else "NON"
-    print(f"DEBUG ENV: SUPABASE_URL={url_check}, SUPABASE_KEY={key_check}")
-    # --- DEBUG END ---
+# --- DEBUG START ---
+# Affiche si les variables sont présentes (OUI/NON)
+url_check = "OUI" if os.getenv("SUPABASE_URL") else "NON"
+key_check = "OUI" if os.getenv("SUPABASE_KEY") else "NON"
+print(f"DEBUG ENV: SUPABASE_URL={url_check}, SUPABASE_KEY={key_check}")
+# --- DEBUG END ---
 
 # On vérifie qu'on a bien les clés avant de créer le client
 if SUPABASE_URL and SUPABASE_KEY:
