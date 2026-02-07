@@ -27,8 +27,8 @@ jobs:
       - name: Run sync script
         env:
           # On lie les secrets GitHub aux variables d'environnement du script
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
-          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          SUPABASE_URL: ${{secrets.SUPABASE_URL}}
+          SUPABASE_KEY: ${{secrets.SUPABASE_KEY}}
+          STRAVA_CLIENT_ID: ${{secrets.STRAVA_CLIENT_ID}}
+          STRAVA_CLIENT_SECRET: ${{secrets.STRAVA_CLIENT_SECRET}}
         run: python cron_sync.py
