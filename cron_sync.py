@@ -137,7 +137,7 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
                 print(f"   ✅ {len(gathered_activities)} activités vérifiées/synchronisées.")
                 success_count += 1
 
-                break
+                #break
 
             else:
                 print("   ℹ️ Aucune activité récente trouvée.")

@@ -181,7 +181,7 @@ def render_tab_regularity(texts):
 
             # 2. Trier les colonnes (Mois) chronologiquement et pas alphabétiquement
             # On recrée la liste des mois dans l'ordre de leur apparition
-            months_order = df_scores.sort_values('month_num')['month_name'].unique()
+            months_order = df_scores.sort_values('month_num', ascending=False)['month_name'].unique()
             pivot_df1 = pivot_df1[months_order]
 
             nb_lignes = len(final_leaderboard)
@@ -221,7 +221,7 @@ def render_tab_regularity(texts):
             # On trie d'abord par Mois (numérique) puis par Points (décroissant)
             df_details = df_scores.sort_values(
                 by=['month_num', 'points_month'], 
-                ascending=[True, False]
+                ascending=[False, False]
             ).copy()
 
             # On prépare une colonne propre pour le mois
