@@ -1,0 +1,216 @@
+import streamlit as st
+import pandas as pd
+import altair as alt
+from strava_operations import *
+from db_operations import *
+from ui_components import common_critria
+
+def render_tab_regularity(texts):
+    """
+    Onglet Challenge Régularité :
+    - Calcul mensuel des KM.
+    - Attribution des points dynamiques (1er = N points, où N = nb participants actifs ce mois-là).
+    - Cumul annuel + Tableau croisé mois par mois.
+    """
+    
+    st.markdown("### 📅 Challenge Régularité")
+    st.caption("Le principe : S'il y a **10 participants** actifs dans le mois, le 1er gagne **10 pts**, le 2ème **9 pts**... et le 10ème **1 pt**.")
+
+    # --- 1. SÉLECTION GROUPE et ANNEE ---
+    selected_g, selected_year = common_critria("regularity")
+
+    if selected_g == "":
+        st.info("Veuillez rejoindre un groupe d'abord.")
+        return
+
+    # --- 2. RÉCUPÉRATION DES DONNÉES ---
+    res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
+    
+    if res.data:
+
+        df = pd.DataFrame(res.data)
+        
+        # Conversion dates et calculs de base
+        df['start_date'] = pd.to_datetime(df['start_date'])
+        df['Month_Num'] = df['start_date'].dt.month
+        # Astuce : On récupère le nom du mois (Janvier, Février...) selon la locale ou en anglais par défaut
+        df['Month_Name'] = df['start_date'].dt.month_name() 
+
+        # --- 3. ALGORITHME DE CALCUL DES POINTS ---
+        all_monthly_scores = []
+        
+        # On boucle sur chaque mois où il y a eu de l'activité
+        months_active = sorted(df['Month_Num'].unique())
+        
+        for m in months_active:
+            # 1. Filtrer les données du mois M
+            df_m = df[df['Month_Num'] == m]
+            
+            # On groupe par athlète pour avoir KM et Points
+            rank_m = df_m.groupby(['id_strava', 'firstname', 'avatar_url'])['distance_km'].sum().reset_index()
+            rank_m = rank_m.sort_values('distance_km', ascending=False).reset_index(drop=True)
+            
+            N = len(rank_m)
+            rank_m['points_month'] = rank_m.index.map(lambda x: N - x)
+            rank_m['month_num'] = m
+            rank_m['month_name'] = df_m['Month_Name'].iloc[0] 
+            
+            # --- CRÉATION DU TEXTE D'AFFICHAGE (Pts + KM) ---
+            rank_m['display_text'] = rank_m.apply(
+                lambda row: f"{int(row['points_month'])} pts ({row['distance_km']:.0f} km)", axis=1
+            )
+            
+            all_monthly_scores.append(rank_m)
+
+        # --- 4. AGGRÉGATION ANNUELLE ---
+        if all_monthly_scores:
+            # On concatène tous les mois
+            df_scores = pd.concat(all_monthly_scores)
+            
+            # On somme les points par athlète pour le classement général
+            final_leaderboard = df_scores.groupby(['id_strava', 'firstname', 'avatar_url'])['points_month'].sum().reset_index()
+            final_leaderboard.rename(columns={'points_month': 'total_points'}, inplace=True)
+            # Tri final par points décroissants
+            final_leaderboard = final_leaderboard.sort_values('total_points', ascending=False).reset_index(drop=True)
+
+            
+            # On utilise un conteneur pour styliser un peu
+            for i, row in final_leaderboard.iterrows():
+                # Préparation des données
+                rank_icon = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+                avatar = get_safe_avatar_url(row['avatar_url'])
+                
+                # On crée une ligne avec 3 colonnes de largeurs différentes
+                # [Image, Nom/Stats, Distance]
+                c1, c2, c3 = st.columns([1, 4, 2])
+                
+                with c1:
+                    st.image(avatar, width=50)
+                
+                with c2:
+                    st.markdown(f"**{rank_icon} {row['firstname']}**")
+                    #if is_global_view:
+                    st.caption(f"{row['total_points']} points")
+                with c3:
+                    # URL du profil de l'athlète
+                    strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
+                    # Choix du logo (Version orange pour le lien)
+                    # Affiche "120.5 km [Icone]" sur la même ligne
+                    strava_icon = "https://www.strava.com/favicon.ico"
+                    st.markdown(
+                        f"**{row['total_points']}** points "
+                        f'<a href="{strava_profile_url}" target="_blank">'
+                        f'<img src="{strava_icon}" width="15" style="margin-left: 5px; margin-bottom: 3px;">'
+                        f'</a>', 
+                        unsafe_allow_html=True
+                    )
+                if i == 2:    
+                    break
+
+            # --- 5. VISUALISATION (GRAPHIQUE) ---
+            chart = alt.Chart(final_leaderboard).mark_bar().encode(
+                x=alt.X('total_points:Q', title='Points cumulés'),
+                y=alt.Y('firstname:N', sort='-x', title='Athlète'),
+                color=alt.Color(
+                    'total_points:Q', 
+                    legend=None, 
+                    scale=alt.Scale(range=["#5E5D5D", '#E62E2D'])),
+                    #scale=alt.Scale(scheme='goldorange')),
+                tooltip=['firstname', 'total_points']
+            ).properties(height=max(400, len(final_leaderboard)*30))
+            
+            st.altair_chart(chart, use_container_width=True)
+
+            # --- 6. TABLEAUX DÉTAILLÉS ---
+            #with st.expander("📊 Classement complet et détails mois par mois", expanded=True):
+                
+            # A. CLASSEMENT GÉNÉRAL
+            """
+            st.markdown("#### 🏆 Classement Général")
+            
+            final_leaderboard['Rang'] = [
+                f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                for i, row in final_leaderboard.iterrows()
+            ]
+            
+            st.dataframe(
+                final_leaderboard[['avatar_url', 'Rang', 'total_points']],
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "avatar_url": st.column_config.ImageColumn("", width="small"),
+                    "Rang": st.column_config.TextColumn("Athlète"),
+                    "total_points": st.column_config.ProgressColumn(
+                        "Points Total",
+                        format="%d pts",
+                        min_value=0,
+                        max_value=int(final_leaderboard['total_points'].max())
+                    ),
+                }
+            )
+
+            st.divider()
+            """
+
+            # B. TABLEAU DÉTAILLÉ (PIVOT)
+            st.markdown("#### 🗓️ Détail : points gagnés par mois (sera complété avec les kms correspondants)")
+            
+            # Création du Pivot Table : Lignes=Noms, Colonnes=Mois, Valeurs=Points
+            pivot_df1 = df_scores.pivot_table(
+                index=['firstname'], 
+                columns='month_name', 
+                values='points_month', 
+                fill_value=0
+            ).astype(int)
+
+            # Pivot sur la colonne 'display_text' qu'on a créée plus haut
+            pivot_df2 = df_scores.pivot_table(
+                index=['firstname'], 
+                columns='month_name', 
+                values='display_text', 
+                aggfunc='first',
+                fill_value="0 pts (0 km)"
+            )
+
+            # 1. Trier les lignes (Athlètes) selon le classement général
+            # On utilise l'ordre de 'final_leaderboard'
+            ordered_names = final_leaderboard.set_index(['firstname']).index
+            # On filtre pour ne garder que ceux présents (sécurité)
+            existing_names = [n for n in ordered_names if n in pivot_df1.index]
+            pivot_df1 = pivot_df1.reindex(existing_names)
+
+            # 2. Trier les colonnes (Mois) chronologiquement et pas alphabétiquement
+            # On recrée la liste des mois dans l'ordre de leur apparition
+            months_order = df_scores.sort_values('month_num')['month_name'].unique()
+            pivot_df1 = pivot_df1[months_order]
+
+            # Affichage
+            st.dataframe(
+                pivot_df1, 
+                use_container_width=True,
+                column_config={
+                    col: st.column_config.NumberColumn(
+                        col, 
+                        width='small',
+                        format="%d pts" 
+                    ) for col in pivot_df1.columns
+                }
+            )
+
+            # Affichage du tableau final
+            """
+            st.dataframe(
+                pivot_df2, 
+                use_container_width=True,
+                column_config={
+                    col: st.column_config.TextColumn(col, width="medium") 
+                    for col in pivot_df2.columns
+                }
+            )
+            """
+
+        else:
+            st.warning("Pas assez de données pour calculer la régularité.")
+            
+    else:
+        st.info(f"Aucune activité trouvée pour {selected_year}.")

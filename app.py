@@ -20,6 +20,7 @@ from ui_components_tab_km import render_tab_km
 from ui_components_tab_groups import render_tab_groups
 from ui_components_tab_admin import render_tab_admin
 from ui_components_tab_elevation import render_tab_dplus
+from ui_components_tab_regularity import render_tab_regularity
 
 ADMIN_ID = 5251772
 
@@ -118,6 +119,7 @@ if st.session_state.access_token:
     # On utilise un dictionnaire pour mapper les noms du menu aux fonctions de rendu
     pages = {
         texts["tab_sunday"]: render_tab_sunday,
+        texts["tab_regularity"]: render_tab_regularity,
         texts["dplus_tab"]: render_tab_dplus,
         texts["leaderboard_tab"]: render_tab_km,
         texts["tab_statsPerso"]: render_tab_stats,

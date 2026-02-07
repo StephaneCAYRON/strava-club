@@ -63,8 +63,12 @@ def render_tab_sunday(texts):
 
             # Agrégation : Compte des sorties ET somme des KM
             leaderboard = df_final.groupby(['id_strava', 'firstname', 'avatar_url']).agg(
-                count=('distance_km', 'count'), total_km=('distance_km', 'sum')
-            ).sort_values('count', ascending=False).reset_index()
+                count=('distance_km', 'count'), 
+                total_km=('distance_km', 'sum')
+            ).sort_values(
+                by=['count','total_km'], 
+                ascending=[False, False]
+            ).reset_index()
         
             #leaderboard = leaderboard.sort_values(['count'], ascending=[False])
             i = 0
