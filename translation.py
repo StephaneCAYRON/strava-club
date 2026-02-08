@@ -33,7 +33,7 @@ lang_dict = {
         "all_year": "Toute l'année",
         "rides": "sorties",
         # ... challenge dimanche ...
-        "tab_sunday": "🌞 Challenge: Dimanche c'est sortie club !",
+        "tab_sunday": " 🥐 Challenge: Dimanche c'est sortie club !",
         "sunday_header": "Assiduité le Dimanche",
         "sunday_desc": "Sorties vélo commencées le dimanche entre 5h et 10h.",
         "sunday_rides_count": "sorties dominicales",
