@@ -83,7 +83,7 @@ def common_critria(key_id):
     #c_sel1, c_sel2 = st.columns(2)
     #with c_sel1:
     selected_name = st.pills(
-        "Groupe", 
+        "", 
         options=group_names, 
         selection_mode="single", 
         default=group_names[0],
@@ -95,7 +95,7 @@ def common_critria(key_id):
     #with c_sel2:
     years = get_years_for_group(selected_g['group_id'])
     if years:
-        selected_year = st.pills("Année", years, selection_mode="single", default=years[0], key="pills_year"+key_id)
+        selected_year = st.pills("", years, selection_mode="single", default=years[0], key="pills_year"+key_id)
     else:
         selected_year = 2026   
     return selected_g, selected_year

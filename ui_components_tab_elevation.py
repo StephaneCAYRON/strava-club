@@ -34,7 +34,7 @@ def render_tab_dplus(texts):
         options_list = [option_all] + months_in_data
         
         # Sélection par défaut : toute l'année
-        selected_period = st.segmented_control("Mois", options_list, selection_mode="single", default=options_list[0])
+        selected_period = st.segmented_control("", options_list, selection_mode="single", default=options_list[0])
 
         # --- LOGIQUE DE FILTRAGE ---
         if selected_period == option_all:

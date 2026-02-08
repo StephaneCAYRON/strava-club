@@ -22,6 +22,7 @@ from ui_components_tab_groups import render_tab_groups
 from ui_components_tab_admin import render_tab_admin
 from ui_components_tab_elevation import render_tab_dplus
 from ui_components_tab_regularity import render_tab_regularity
+from ui_components_tab_group_page import render_tab_group_page
 
 ADMIN_ID = 5251772
 
@@ -77,10 +78,12 @@ def _run_sync_background(athlete, access_token, refresh_token):
             all_history = fetch_all_activities_parallel(access_token, max_pages=100)
             if all_history:
                 sync_profile_and_activities(athlete, all_history, refresh_token)
+        
     except Exception as e:
         _sync_status["error"] = str(e)
     finally:
         _sync_status["done"] = True
+        
 
 # --- FONCTION DE MISE À JOUR UI ---
 def refresh_local_data():
@@ -104,7 +107,7 @@ if st.session_state.access_token:
     sidebar_component(texts)
 
     athlete = st.session_state.athlete
-    
+    refresh_local_data()
     # --- SYNCHRONISATION EN ARRIÈRE-PLAN (invisible, non bloquante) ---
     if not st.session_state.auto_sync_done:
         if not st.session_state.sync_started:
@@ -122,7 +125,7 @@ if st.session_state.access_token:
         @st.fragment(run_every=2)
         def _poll_sync_done():
             if _sync_status["done"]:
-                refresh_local_data()
+                
                 st.session_state.auto_sync_done = True
                 st.session_state.sync_started = False
                 if _sync_status.get("error"):
@@ -161,6 +164,11 @@ if st.session_state.access_token:
             texts["tab_statsPerso"]: render_tab_stats,
             texts["group_tab"]: render_tab_groups
         }
+
+    approved = [g for g in user_groups_res.data if g["status"] == "approved"]
+    for g in sorted(approved, key=lambda x: x["groups"]["name"]):
+        group_name = f"📊 Stats {g["groups"]["name"]}"
+        pages[group_name] = (lambda texts, grp=g: render_tab_group_page(texts, grp))
 
     if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
         pages["🛠️ Console Admin"] = render_tab_admin

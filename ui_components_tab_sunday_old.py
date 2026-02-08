@@ -43,7 +43,7 @@ def render_tab_sunday(texts):
             
             st.write("")
             selected_period = st.segmented_control(
-                "Période", 
+                "", 
                 options=options_list, 
                 selection_mode="single", 
                 default=option_all,
