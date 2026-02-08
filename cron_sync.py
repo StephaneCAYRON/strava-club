@@ -103,7 +103,7 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
             if new_refresh != old_refresh:
                 supabase.table("profiles").update({
                     "refresh_token": new_refresh,
-                    "updated_at": datetime.datetime.now().isoformat()
+                    "last_login": datetime.datetime.now(datetime.timezone.utc).isoformat()
                 }).eq("id_strava", athlete_id).execute()
                 updated_tokens += 1
             

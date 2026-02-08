@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import datetime
-from db_operations import get_leaderboard_by_group_by_year
+from db_operations import *
 from ui_components import common_critria
 from strava_operations import *
 

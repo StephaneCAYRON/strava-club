@@ -23,12 +23,18 @@ def render_tab_admin(texts):
     st.subheader("État des membres")
     
     # Note: Si tu ne veux pas faire de RPC SQL, on peut le faire en Pandas
-    res = supabase.table("profiles").select("firstname, lastname, id_strava, avatar_url").execute()
+    res = supabase.table("profiles").select("firstname, lastname, id_strava, avatar_url, last_login").execute()
     df_admin = pd.DataFrame(res.data)
     # Créer l'URL du profil Strava à partir de l'ID
     df_admin['strava_link'] = df_admin['id_strava'].apply(lambda x: f"https://www.strava.com/athletes/{x}")
-    # 3. Organisation des colonnes
-    df_admin = df_admin[['firstname', 'lastname', 'strava_link', 'id_strava']]
+    # Formater la dernière connexion (last_login)
+    if "last_login" in df_admin.columns:
+        df_admin["dernière_connexion"] = pd.to_datetime(df_admin["last_login"], utc=True).dt.tz_convert(None).dt.strftime("%d/%m/%Y %H:%M")
+    else:
+        df_admin["dernière_connexion"] = "—"
+    # Organisation des colonnes
+    cols = ['firstname', 'lastname', 'dernière_connexion', 'strava_link', 'id_strava']
+    df_admin = df_admin[[c for c in cols if c in df_admin.columns]]
     df_admin = df_admin.sort_values(by="lastname", ascending=True)
     # 4. Affichage avec configuration avancée
     nb_lignes = len(df_admin)
@@ -43,11 +49,12 @@ def render_tab_admin(texts):
             "avatar": st.column_config.ImageColumn("Photo", width="small"),
             "firstname": "Prénom",
             "lastname": "Nom",
+            "dernière_connexion": st.column_config.TextColumn("Dernière connexion", width="medium"),
             "strava_link": st.column_config.LinkColumn(
                 "Profil Strava",
                 help="Cliquer pour ouvrir le profil Strava",
                 validate=r"^https://www.strava.com/athletes/.*",
-                display_text="🔗 Voir sur Strava" # Tu peux mettre une icône ou un texte
+                display_text="🔗 Voir sur Strava"
             ),
             "id_strava": st.column_config.TextColumn("ID Strava")
         }

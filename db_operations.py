@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 import os
+import datetime
 
 # --- INIT SUPABASE HYBRIDE ---
 try:
@@ -45,15 +46,20 @@ def get_last_sync_time():
 def sync_profile_and_activities(athlete, activities, refresh_token):
     """Sauvegarde le profil et les activités dans Supabase."""
     try:
-        # 1. Sauvegarde Profil
+        # 1. Sauvegarde Profil (last_login = dernière connexion / sync)
         profile_data = {
             "id_strava": athlete["id"],
             "firstname": athlete.get("firstname"),
             "lastname": athlete.get("lastname"),
             "refresh_token": refresh_token,
             #"scope": accepted_scopes, # <--- ON AJOUTE LE SCOPE ICI
-            "avatar_url": athlete.get("profile_medium")
+            "avatar_url": athlete.get("profile_medium"),
+            "last_login": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
+        
+        #st.write("DEBUG : PROFILE DATA", profile_data)
+        #print("DEBUG : PROFILE DATA", profile_data)
+
         supabase.table("profiles").upsert(profile_data).execute()
 
         # 2. Sauvegarde Activités
