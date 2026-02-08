@@ -117,14 +117,30 @@ if st.session_state.access_token:
     # Rendu de la Sidebar avec Radio ou Selectbox
     # On définit les options du menu
     # On utilise un dictionnaire pour mapper les noms du menu aux fonctions de rendu
-    pages = {
-        texts["tab_sunday"]: render_tab_sunday,
-        texts["tab_regularity"]: render_tab_regularity,
-        texts["dplus_tab"]: render_tab_dplus,
-        texts["leaderboard_tab"]: render_tab_km,
-        texts["tab_statsPerso"]: render_tab_stats,
-        texts["group_tab"]: render_tab_groups
-    }
+    # On récupère les adhésions de l'utilisateur (déjà existant dans votre db_operations)
+    user_groups_res = get_user_memberships(athlete['id'])
+    has_groups = len(user_groups_res.data) > 0
+
+    # Définition de la page par défaut
+    if not has_groups:
+        default_page = "👥 Mes Groupes"
+        pages = {
+            texts["group_tab"]: render_tab_groups,
+            texts["tab_sunday"]: render_tab_sunday,
+            texts["tab_regularity"]: render_tab_regularity,
+            texts["dplus_tab"]: render_tab_dplus,
+            texts["leaderboard_tab"]: render_tab_km,
+            texts["tab_statsPerso"]: render_tab_stats,
+        }
+    else:
+        pages = {
+            texts["tab_sunday"]: render_tab_sunday,
+            texts["tab_regularity"]: render_tab_regularity,
+            texts["dplus_tab"]: render_tab_dplus,
+            texts["leaderboard_tab"]: render_tab_km,
+            texts["tab_statsPerso"]: render_tab_stats,
+            texts["group_tab"]: render_tab_groups
+        }
 
     if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
         pages["🛠️ Console Admin"] = render_tab_admin

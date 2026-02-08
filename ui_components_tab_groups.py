@@ -7,9 +7,16 @@ def render_tab_groups(texts):
     athlete = st.session_state.athlete
     col_list, col_admin = st.columns([1, 1], gap="large")
     
+# Vérification des groupes actuels
+    m_groups = get_user_memberships(athlete['id'])
+    has_groups = len(m_groups.data) > 0
+    if not has_groups:
+        # MESSAGE POUR LES NOUVEAUX
+        st.error("👋 **Bienvenue !** Pour commencer à voir vos statistiques et participer aux challenges, vous devez rejoindre un groupe. Recherchez votre club ou votre groupe d'amis dans la liste ci-dessous et cliquez sur **'Demander à rejoindre'**.")
+
     with col_list:
         st.subheader(texts["my_groups"])
-        m_groups = get_user_memberships(athlete['id'])
+        
         for g in m_groups.data:
             icon = "✅" if g['status'] == 'approved' else "⏳"
             st.write(f"{icon} **{g['groups']['name']}**")
