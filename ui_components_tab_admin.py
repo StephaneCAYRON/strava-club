@@ -29,11 +29,16 @@ def render_tab_admin(texts):
     df_admin['strava_link'] = df_admin['id_strava'].apply(lambda x: f"https://www.strava.com/athletes/{x}")
     # 3. Organisation des colonnes
     df_admin = df_admin[['firstname', 'lastname', 'strava_link', 'id_strava']]
+    df_admin = df_admin.sort_values(by="lastname", ascending=True)
     # 4. Affichage avec configuration avancée
+    nb_lignes = len(df_admin)
+    hauteur_calculee = (nb_lignes * 35) + 40
+
     st.dataframe(
         df_admin,
         use_container_width=True,
         hide_index=True,
+        height=hauteur_calculee,
         column_config={
             "avatar": st.column_config.ImageColumn("Photo", width="small"),
             "firstname": "Prénom",

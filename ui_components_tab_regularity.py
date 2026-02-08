@@ -14,7 +14,7 @@ def render_tab_regularity(texts):
     """
     
     st.markdown("### 📅 Challenge Régularité")
-    st.caption("Le principe : s'il y a **10 participants** actifs dans le mois, le 1er gagne **10 pts**, le 2ème **9 pts**... et le 10ème **1 pt**.")
+    st.caption("Le principe : s'il y a **10 participants** actifs dans le mois, le 1er au nombre de km cumulé dans le mois gagne **10 pts**, le 2ème **9 pts**... et le 10ème **1 pt**.")
 
     # --- 1. SÉLECTION GROUPE et ANNEE ---
     selected_g, selected_year = common_critria("regularity")
