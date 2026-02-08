@@ -94,6 +94,19 @@ def get_years_for_group(group_id):
     return [2026]
 
 
+def get_leaderboard_by_group_by_year_cached(group_id, year):
+    """Retourne les données leaderboard pour (group_id, year), en les récupérant depuis
+    le cache session si présentes, sinon en interrogeant la DB puis en mettant en cache."""
+    st.session_state.setdefault("leaderboard_cache", {})
+    key = (group_id, year)
+    cache = st.session_state.leaderboard_cache
+    if key in cache:
+        res = type("LeaderboardResult", (), {"data": cache[key]})()
+        return res
+    res = get_leaderboard_by_group_by_year(group_id, year)
+    cache[key] = res.data
+    return res
+
 # Option plus performante si vous avez des milliers d'activités
 def get_leaderboard_by_group_by_year(group_id, year):
     start_date = f"{year}-01-01"

@@ -27,7 +27,7 @@ def render_tab_sunday(texts):
         return
 
     # On récupère toutes les activités de l'année pour le groupe
-    res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
+    res = get_leaderboard_by_group_by_year_cached(selected_g['group_id'], selected_year)
     
     if not res.data:
         st.info(f"Aucune activité trouvée pour {selected_year}.")

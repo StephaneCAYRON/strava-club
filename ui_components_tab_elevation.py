@@ -15,7 +15,7 @@ def render_tab_dplus(texts):
         st.info("No group yet")
         return
 
-    res = get_leaderboard_by_group_by_year(selected_g['group_id'], selected_year)
+    res = get_leaderboard_by_group_by_year_cached(selected_g['group_id'], selected_year)
     
     if res.data:
         df = pd.DataFrame(res.data)
