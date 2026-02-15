@@ -171,6 +171,10 @@ def render_epic_rides_scatter(df_activities):
         return
 
     # --- GRAPHIQUE (points cliquables vers Strava) ---
+    # --- CONSTRUCTION DU GRAPHIQUE ---
+   
+    #).interactive(bind_y=False) # On limite l'interactivité pour faciliter le clic
+    
     encode_kw = dict(
         x=alt.X('distance_km:Q', title='Distance (km)'),
         y=alt.Y('total_elevation_gain:Q', title='Dénivelé (m)'),
@@ -185,8 +189,32 @@ def render_epic_rides_scatter(df_activities):
     )
     if 'strava_url' in df_chart.columns:
         encode_kw['href'] = alt.Href('strava_url:N')
-    scatter = alt.Chart(df_chart).mark_circle(size=100, opacity=0.7, cursor='pointer').encode(**encode_kw).properties(height=500).interactive()
+    scatter = alt.Chart(df_chart).mark_circle(size=100, opacity=0.7, cursor='pointer').encode(**encode_kw).properties(height=500).interactive(bind_y=False)
 
     st.altair_chart(scatter, use_container_width=True)
+    
     if 'strava_url' in df_chart.columns:
-        st.caption("Cliquez sur un point pour ouvrir la sortie sur Strava.")
+        st.caption("CTRL+Click sur un point pour ouvrir la sortie sur Strava.")
+
+    # On prépare un petit tableau des "Sorties Épiques" (Top 10 par difficulté)
+    df_top_epic = df_chart.nlargest(10, 'gradient')[['name', 'gradient', 'date_str', 'distance_km', 'total_elevation_gain', 'strava_url']]
+
+    st.markdown("#### 📋 Détail des sorties légendaires")
+    st.dataframe(
+        df_top_epic,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "name": st.column_config.TextColumn("Nom"),
+            "gradient": st.column_config.NumberColumn("Pente moy. %", format="%.1f"),
+            "date_str": "Date",
+            "distance_km": st.column_config.NumberColumn("Dist.", format="%.1f km"),
+            "total_elevation_gain": st.column_config.NumberColumn("D+", format="%d m"),
+            "strava_url": st.column_config.LinkColumn(
+                "Lien",
+                display_text="🔗 Voir sur Strava", # Texte cliquable propre
+                help="Ouvre l'activité dans un nouvel onglet",
+                validate="^https://www.strava.com/.*"
+            )
+        }
+    )
