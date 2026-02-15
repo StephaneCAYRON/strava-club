@@ -202,4 +202,22 @@ def update_membership_status(membership_id, status="approved"):
     """Approuve ou refuse un membre"""
     return supabase.table("group_members").update({"status": status}).eq("id", membership_id).execute()
 
-
+def get_activities_for_athlete(athlete_id):
+    """
+    Récupère toutes les activités d'un athlète spécifique via son ID Strava.
+    Triées par date décroissante (la plus récente en premier).
+    """
+    try:
+        response = supabase.table("activities") \
+            .select("*") \
+            .eq("id_strava", athlete_id) \
+            .eq("type", "Ride")\
+            .order("start_date", desc=True) \
+            .execute()
+        
+        return response
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des activités pour {athlete_id}: {e}")
+        # On retourne un objet vide ou une structure compatible en cas d'erreur
+        return None

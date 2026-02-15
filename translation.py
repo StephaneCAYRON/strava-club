@@ -27,12 +27,13 @@ lang_dict = {
         "leaderboard_tab": "🔥  Challenge : stakhanoviste",
         "dplus_tab": "🏔️  Challenge : montagne",
         "group_tab":"👥 Mes groupes",
-        "tab_statsPerso":"📍Mes sorties récentes",
+        "tab_statsPerso":"📍Mes stats",
         "request_sent" : "Demande envoyée",
         "approve" : "Approuver",
         "all_year": "Toute l'année",
         "rides": "sorties",
         # ... challenge dimanche ...
+        "nav_challenges": "Challenges",
         "tab_sunday": " 🥐 Challenge : Dimanche c'est sortie club !",
         "sunday_header": "Assiduité le Dimanche",
         "sunday_desc": "Sorties vélo commencées le dimanche entre 5h et 10h.",
@@ -69,6 +70,7 @@ lang_dict = {
         "all_year": "Full Year",
         "rides": "rides",
         # ... challenge dimanche ...
+        "nav_challenges": "Challenges",
         "tab_sunday": "🌞 Sunday Morning",
         "sunday_header": "Sunday Morning Consistency",
         "sunday_desc": "Rides started on Sunday between 5 AM and 10 AM.",

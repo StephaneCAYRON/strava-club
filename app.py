@@ -24,6 +24,7 @@ from ui_components_tab_elevation import render_tab_dplus
 from ui_components_tab_regularity import render_tab_regularity
 from ui_components_tab_group_page import render_tab_group_page
 
+
 ADMIN_ID = 5251772
 
 # --- CONFIGURATION ---

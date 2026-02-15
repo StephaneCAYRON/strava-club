@@ -3,6 +3,7 @@ import pandas as pd
 import altair as alt
 from strava_operations import *
 from db_operations import *
+from ui_components_statistics import render_advanced_stats, render_epic_rides_scatter
 
 def render_tab_stats(texts):
     """Contenu de l'onglet Statistiques Personnelles."""
@@ -13,6 +14,23 @@ def render_tab_stats(texts):
     if isinstance(result, tuple) and len(result) == 2:
         stats_string, total_strava = result
         st.info(f"{stats_string}, total: {total_db}")
+    
+    #st.info("DEBUG : get_activities_for_athlete")
+    # On récupère les activités de l'utilisateur connecté
+    # (Assurez-vous d'avoir une fonction qui renvoie un DataFrame pour un user ID)
+    res = get_activities_for_athlete(st.session_state.athlete['id']) 
+    #st.info(f"DEBUG : res:{res}")
+    
+    if res.data:
+        df_my_activities = pd.DataFrame(res.data)
+        render_advanced_stats(df_my_activities)
+        st.divider()
+        # Ajout du Scatter Plot
+        render_epic_rides_scatter(df_my_activities)
+    else:
+        st.info("Synchronisez vos activités pour voir vos statistiques.")
+    
+    
 
     if 'last_activities' in st.session_state and st.session_state.last_activities:
         st.subheader(texts["last_activities"])
