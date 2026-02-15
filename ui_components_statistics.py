@@ -108,37 +108,37 @@ def render_advanced_stats(df_activities):
     # --- 4. TABLEAU DES RECORDS DÉTAILLÉS ---
     st.markdown("#### 🏆 Vos Records")
     
-    col_a, col_b = st.columns(2)
+    # URL Strava pour chaque activité (id_activity présent dans les données)
+    df_activities = df_activities.copy()
+    if 'id_activity' in df_activities.columns:
+        df_activities['strava_url'] = "https://www.strava.com/activities/" + df_activities['id_activity'].astype(str)
     
-    with col_a:
-        st.caption("Top 5 Distances")
-        top_dist = df_activities.nlargest(5, 'distance_km')[['start_date', 'name', 'distance_km', 'total_elevation_gain']]
-        st.dataframe(
-            top_dist, 
-            hide_index=True, 
-            use_container_width=True,
-            column_config={
-                "start_date": st.column_config.DateColumn("Date", format="DD/MM/YYYY"),
-                "name": "Nom",
-                "distance_km": st.column_config.NumberColumn("Km", format="%.1f"),
-                "total_elevation_gain": st.column_config.NumberColumn("D+", format="%d")
-            }
-        )
+    #col_a, col_b = st.columns(2)
+    
+    common_column_config = {
+        "start_date": st.column_config.DateColumn("Date", format="DD/MM/YYYY"),
+        "name": "Nom",
+        "distance_km": st.column_config.NumberColumn("Km", format="%.1f"),
+        "total_elevation_gain": st.column_config.NumberColumn("D+", format="%d"),
+    }
+    if 'strava_url' in df_activities.columns:
+        common_column_config["strava_url"] = st.column_config.LinkColumn("🔗 Strava", display_text="Ouvrir")
+    
+    #with col_a:
+    st.caption("Top 5 Distances")
+    cols_dist = ['start_date', 'name', 'distance_km', 'total_elevation_gain']
+    if 'strava_url' in df_activities.columns:
+        cols_dist.append('strava_url')
+    top_dist = df_activities.nlargest(5, 'distance_km')[cols_dist]
+    st.dataframe(top_dist, hide_index=True, use_container_width=True, column_config=common_column_config)
         
-    with col_b:
-        st.caption("Top 5 Dénivelés")
-        top_elev = df_activities.nlargest(5, 'total_elevation_gain')[['start_date', 'name', 'distance_km', 'total_elevation_gain']]
-        st.dataframe(
-            top_elev, 
-            hide_index=True, 
-            use_container_width=True,
-            column_config={
-                "start_date": st.column_config.DateColumn("Date", format="DD/MM/YYYY"),
-                "name": "Nom",
-                "distance_km": st.column_config.NumberColumn("Km", format="%.1f"),
-                "total_elevation_gain": st.column_config.NumberColumn("D+", format="%d")
-            }
-        )
+    #with col_b:
+    st.caption("Top 5 Dénivelés")
+    cols_elev = ['start_date', 'name', 'distance_km', 'total_elevation_gain']
+    if 'strava_url' in df_activities.columns:
+        cols_elev.append('strava_url')
+    top_elev = df_activities.nlargest(5, 'total_elevation_gain')[cols_elev]
+    st.dataframe(top_elev, hide_index=True, use_container_width=True, column_config=common_column_config)
 
 def render_epic_rides_scatter(df_activities):
     st.markdown("#### 🌌 Km / D+, vélo uniquement")
@@ -160,23 +160,31 @@ def render_epic_rides_scatter(df_activities):
     
     # Conversion de la date en string pour éviter les conflits de format avec Altair
     df_chart['date_str'] = df_chart['start_date'].dt.strftime('%d/%m/%Y')
+    # URL Strava pour ouvrir l'activité au clic sur le point
+    if 'id_activity' in df_chart.columns:
+        df_chart['strava_url'] = "https://www.strava.com/activities/" + df_chart['id_activity'].astype(str)
 
     if df_chart.empty:
         st.warning("Aucune donnée valide pour afficher le graphique.")
         return
 
-    # --- GRAPHIQUE ---
-    scatter = alt.Chart(df_chart).mark_circle(size=100, opacity=0.7).encode(
-        x=alt.X('distance_km:Q', title='Distance (km)'), # :Q force le type Quantitatif
-        y=alt.Y('total_elevation_gain:Q', title='Dénivelé (m)'), 
+    # --- GRAPHIQUE (points cliquables vers Strava) ---
+    encode_kw = dict(
+        x=alt.X('distance_km:Q', title='Distance (km)'),
+        y=alt.Y('total_elevation_gain:Q', title='Dénivelé (m)'),
         color=alt.Color('gradient_capped:Q', scale=alt.Scale(scheme='turbo'), title='Pente %'),
         tooltip=[
-            alt.Tooltip('name:N', title='Nom'), # :N pour Nominal (texte)
-            alt.Tooltip('date_str:N', title='Date'), 
+            alt.Tooltip('name:N', title='Nom'),
+            alt.Tooltip('date_str:N', title='Date'),
             alt.Tooltip('distance_km:Q', title='Distance', format='.1f'),
             alt.Tooltip('total_elevation_gain:Q', title='Dénivelé', format='.0f'),
-            alt.Tooltip('gradient:Q', title='% moyen', format='.2f')
-        ]
-    ).properties(height=500).interactive()
+            alt.Tooltip('gradient:Q', title='% moyen', format='.2f'),
+        ],
+    )
+    if 'strava_url' in df_chart.columns:
+        encode_kw['href'] = alt.Href('strava_url:N')
+    scatter = alt.Chart(df_chart).mark_circle(size=100, opacity=0.7, cursor='pointer').encode(**encode_kw).properties(height=500).interactive()
 
     st.altair_chart(scatter, use_container_width=True)
+    if 'strava_url' in df_chart.columns:
+        st.caption("Cliquez sur un point pour ouvrir la sortie sur Strava.")
