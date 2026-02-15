@@ -67,14 +67,16 @@ def render_advanced_stats(df_activities):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        render_stat_card("🎩", "Eddington Number", f"{eddington}", f"Manque {missing_rides} sorties de {next_level}km", "#9b59b6")
+        render_stat_card("🎩", "Nombre d'Eddington", f"{eddington}", f"Manque {missing_rides} sorties de {next_level}km", "#9b59b6")
     
     with col2:
-        render_stat_card("📏", "Max Distance", f"{max_dist:.1f} km", "Votre plus longue sortie", "#3498db")
+        render_stat_card("📏", "Max Distance", f"{max_dist:.1f} km", "", "#3498db")
         
     with col3:
-        render_stat_card("⛰️", "Max Dénivelé", f"{max_elev:.0f} m", "Votre plus grosse ascension", "#e67e22")
+        render_stat_card("⛰️", "Max Dénivelé", f"{max_elev:.0f} m", "", "#e67e22")
 
+    st.write("Le numéro d'Eddington (E) est obtenu quand le nombre de kilomètre réalisés en une sortie est égale au nombre de fois où ce kilométrage a été effectué.")
+    st.write("Exemple : Un cycliste à un nombre d'Eddington de 123 : cela veut dire qu'il a effectué 123 sorties d'au moins 123 km.")
     st.divider()
 
     # --- 3. RÉPARTITION ANNUELLE (Heatmap simplifiée) ---

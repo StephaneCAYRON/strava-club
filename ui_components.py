@@ -23,17 +23,12 @@ def render_tab_stats(texts):
     
     if res.data:
         df_my_activities = pd.DataFrame(res.data)
-        
-       
         render_advanced_stats(df_my_activities)
         st.divider()
         # Ajout du Scatter Plot
         render_epic_rides_scatter(df_my_activities)
-        
     else:
         st.info("Synchronisez vos activités pour voir vos statistiques.")
-    
-    
 
     if 'last_activities' in st.session_state and st.session_state.last_activities:
         st.subheader(texts["last_activities"])
