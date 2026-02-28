@@ -43,7 +43,7 @@ def get_last_sync_time():
         return last_time.strftime("%d/%m/%Y à %H:%M")
     return "Inconnue"
 
-def sync_profile_and_activities(athlete, activities, refresh_token):
+def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=False, is_from_ui=True):
     """Sauvegarde le profil et les activités dans Supabase."""
     try:
         # 1. Sauvegarde Profil (last_login = dernière connexion / sync)
@@ -54,11 +54,15 @@ def sync_profile_and_activities(athlete, activities, refresh_token):
             "refresh_token": refresh_token,
             #"scope": accepted_scopes, # <--- ON AJOUTE LE SCOPE ICI
             "avatar_url": athlete.get("profile_medium"),
-            "last_login": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
         
-        #st.write("DEBUG : PROFILE DATA", profile_data)
-        #print("DEBUG : PROFILE DATA", profile_data)
+        if is_from_ui:
+            profile_data["last_login"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            supabase.rpc('increment_connection', {'target_id': athlete["id"]}).execute()
+
+        # AJOUT : Si c'est une synchro full, on enregistre la date
+        if is_full_sync:
+            profile_data["last_full_synchro"] = datetime.datetime.now().isoformat()
 
         supabase.table("profiles").upsert(profile_data).execute()
 

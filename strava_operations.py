@@ -81,19 +81,22 @@ def fetch_page(access_token, page, per_page=200):
         return response.json()
     return []
 
-def fetch_all_activities_parallel(access_token, max_pages=20):
+def fetch_all_activities_parallel(access_token, max_pages=100):
     # """Lance plusieurs requêtes en parallèle pour aller vite."""
     all_activities = []
-    
-    # Utilisation d'un pool de threads (10 threads en parallèle comme demandé)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        # On prépare les appels pour les pages 1 à max_pages
-        future_to_page = {executor.submit(fetch_page, access_token, p): p for p in range(1, max_pages + 1)}
-        
-        for future in concurrent.futures.as_completed(future_to_page):
-            page_data = future.result()
-            if page_data:
-                all_activities.extend(page_data)
+    try:
+        # Utilisation d'un pool de threads (10 threads en parallèle comme demandé)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            # On prépare les appels pour les pages 1 à max_pages
+            future_to_page = {executor.submit(fetch_page, access_token, p): p for p in range(1, max_pages + 1)}
+            
+            for future in concurrent.futures.as_completed(future_to_page):
+                page_data = future.result()
+                if page_data:
+                    all_activities.extend(page_data)
+    except Exception as e:
+        print(f"❌ Erreur fetch_all_activities_parallel : {e}")
+        error_count += 1
     return all_activities
 
 def get_strava_stats(access_token, athlete_id):

@@ -133,7 +133,7 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
 
                 # --- E. SYNCHRONISATION (UPSERT) ---
                 # Cette fonction va mettre à jour les activités existantes et créer les nouvelles
-                sync_profile_and_activities(athlete_obj, gathered_activities, new_refresh)
+                sync_profile_and_activities(athlete_obj, gathered_activities, new_refresh, is_from_ui=False, is_full_sync=not yesForOnlyRecentFalseForAll)
                 print(f"   ✅ {len(gathered_activities)} activités vérifiées/synchronisées.")
                 success_count += 1
 

@@ -151,7 +151,44 @@ def render_tab_leaderboard(texts):
             ).properties(height=400).interactive()
             st.altair_chart(line_chart, use_container_width=True)    
 
-            # --- 6. TABLEAU DÉTAILLÉ COMPLET ---
+
+            # --- 6. GRAPHIQUE ANALYTIQUE (PROFIL DES ATHLÈTES) ---
+            st.write("### 📊 Profil des membres (Distance vs D+)")
+
+            # On prépare les données pour Altair
+            # On filtre les athlètes qui n'ont pas de données pour éviter les points à (0,0)
+            df_scatter = leaderboard[leaderboard['total_km'] > 0].copy()
+
+            scatter_chart = alt.Chart(df_scatter).mark_circle(size=120, opacity=0.8).encode(
+                x=alt.X('total_km:Q', title="Distance Totale (km)"),
+                y=alt.Y('total_dplus:Q', title="Dénivelé Total (m)"),
+                color=alt.Color('avg_gradient:Q', 
+                                title="Pente Moy. (%)", 
+                                scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
+                tooltip=[
+                    alt.Tooltip('firstname:N', title="Athlète"),
+                    alt.Tooltip('total_km:Q', format=".1f", title="Total Km"),
+                    alt.Tooltip('total_dplus:Q', format=".0f", title="Total D+"),
+                    alt.Tooltip('avg_gradient:Q', format=".2f", title="Pente moy. %"),
+                    alt.Tooltip('total_rides:Q', title="Sorties")
+                ]
+            ).properties(
+                height=500
+            ).interactive()
+
+            # Ajout des noms des athlètes à côté des points (optionnel mais sympa)
+            text = scatter_chart.mark_text(
+                align='left',
+                baseline='middle',
+                dx=7
+            ).encode(
+                text='firstname:N'
+            )
+
+            st.altair_chart(scatter_chart + text, use_container_width=True)
+
+
+            # --- 7. TABLEAU DÉTAILLÉ COMPLET ---
             st.markdown("#### 📊 Statistiques détaillées de la période")
             
             # Préparation du libellé du rang
