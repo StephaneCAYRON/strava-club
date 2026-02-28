@@ -24,7 +24,7 @@ lang_dict = {
         "my_groups": "👥 Mes groupes",
         "no_group": "Vous n'êtes membre d'aucun groupe.",
         "tab_regularity": " ⛓️ Challenge : régularité",
-        "leaderboard_tab": "🔥  Challenge : stakhanoviste",
+        "leaderboard_tab": "🔥Cumuls Km, D+, Temps",
         "dplus_tab": "🏔️  Challenge : montagne",
         "group_tab":"👥 Mes groupes",
         "tab_statsPerso":"📍Mes stats",

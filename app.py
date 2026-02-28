@@ -17,13 +17,13 @@ from translation import lang_dict
 from ui_components_sidebar import sidebar_component
 from ui_components import render_tab_stats
 from ui_components_tab_sunday import render_tab_sunday
-from ui_components_tab_km import render_tab_km
+#deprecated from ui_components_tab_km import render_tab_km
+#deprecated from ui_components_tab_elevation import render_tab_dplus
 from ui_components_tab_groups import render_tab_groups
 from ui_components_tab_admin import render_tab_admin
-from ui_components_tab_elevation import render_tab_dplus
 from ui_components_tab_regularity import render_tab_regularity
 from ui_components_tab_group_page import render_tab_group_page
-
+from ui_components_tab_leaderboard import render_tab_leaderboard
 
 ADMIN_ID = 5251772
 
@@ -152,19 +152,22 @@ if st.session_state.access_token:
             texts["group_tab"]: render_tab_groups,
             texts["tab_sunday"]: render_tab_sunday,
             texts["tab_regularity"]: render_tab_regularity,
-            texts["dplus_tab"]: render_tab_dplus,
-            texts["leaderboard_tab"]: render_tab_km,
+            texts["leaderboard_tab"]: render_tab_leaderboard,
+            #texts["dplus_tab"]: render_tab_dplus,
+            #texts["leaderboard_tab"]: render_tab_km,
             texts["tab_statsPerso"]: render_tab_stats,
         }
     else:
         pages = {
             texts["tab_sunday"]: render_tab_sunday,
             texts["tab_regularity"]: render_tab_regularity,
-            texts["dplus_tab"]: render_tab_dplus,
-            texts["leaderboard_tab"]: render_tab_km,
+            texts["leaderboard_tab"]: render_tab_leaderboard,
+            #texts["dplus_tab"]: render_tab_dplus,
+            #texts["leaderboard_tab"]: render_tab_km,
             texts["tab_statsPerso"]: render_tab_stats,
             texts["group_tab"]: render_tab_groups
         }
+
 
     approved = [g for g in user_groups_res.data if g["status"] == "approved"]
     for g in sorted(approved, key=lambda x: x["groups"]["name"]):
@@ -204,8 +207,9 @@ else:
     left_co, cent_co, last_co = st.columns([1, 2, 1])
 
     with cent_co:
-        st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
-        #redirect_button(get_strava_auth_url(), texts["connect"])
+        #st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
+        redirect_button(get_strava_auth_url(), texts["connect"])
+        #redirect_button(get_strava_auth_url(), "test")
     
 
 st.markdown("---")

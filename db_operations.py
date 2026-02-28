@@ -69,7 +69,8 @@ def sync_profile_and_activities(athlete, activities, refresh_token):
                 "id_strava": athlete["id"],
                 "name": a["name"],
                 "distance_km": a["distance"] / 1000,
-                "total_elevation_gain": a['total_elevation_gain'], # <--- AJOUT
+                "total_elevation_gain": a['total_elevation_gain'], 
+                "moving_time": a.get("moving_time", 0), 
                 "type": a["type"],
                 "start_date": a["start_date"]
             } for a in activities]
