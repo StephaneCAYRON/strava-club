@@ -17,7 +17,7 @@ except (FileNotFoundError, AttributeError, KeyError):
 # Affiche si les variables sont présentes (OUI/NON)
 url_check = "OUI" if os.getenv("SUPABASE_URL") else "NON"
 key_check = "OUI" if os.getenv("SUPABASE_KEY") else "NON"
-print(f"DEBUG ENV: SUPABASE_URL={url_check}, SUPABASE_KEY={key_check}")
+print(f"⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️DEBUG ENV: SUPABASE_URL={url_check}, SUPABASE_KEY={key_check}")
 # --- DEBUG END ---
 
 # On vérifie qu'on a bien les clés avant de créer le client
@@ -46,6 +46,15 @@ def get_last_sync_time():
 def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=False, is_from_ui=True):
     """Sauvegarde le profil et les activités dans Supabase."""
     try:
+       
+        current_profile = supabase.table("profiles").select("nb_connection").eq("id_strava", athlete["id"]).execute()
+        current_nb = 0
+        if current_profile.data:
+            # Si l'utilisateur existe, on prend sa valeur ou 0 si c'est vide (None)
+            current_nb = current_profile.data[0].get("nb_connection") or 0
+
+        #print(f"⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️ DEBUG: Valeur actuelle en base pour {athlete['id']} = {current_nb}")
+
         # 1. Sauvegarde Profil (last_login = dernière connexion / sync)
         profile_data = {
             "id_strava": athlete["id"],
@@ -58,13 +67,16 @@ def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=
         
         if is_from_ui:
             profile_data["last_login"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            supabase.rpc('increment_connection', {'target_id': athlete["id"]}).execute()
+            #supabase.rpc('increment_connection', {'target_id': athlete["id"]}).execute()
+            profile_data["nb_connection"] = current_nb + 1
+            #print(f"DEBUG: Nouvelle valeur envoyée: {profile_data['nb_connection']}")
 
         # AJOUT : Si c'est une synchro full, on enregistre la date
         if is_full_sync:
             profile_data["last_full_synchro"] = datetime.datetime.now().isoformat()
 
-        supabase.table("profiles").upsert(profile_data).execute()
+        response = supabase.table("profiles").upsert(profile_data).execute()
+        #print(f"DEBUG: Réponse Upsert Supabase: {response.data}")
 
         # 2. Sauvegarde Activités
         if activities:

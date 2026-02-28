@@ -71,14 +71,16 @@ def _run_sync_background(athlete, access_token, refresh_token):
     """Exécute la synchronisation en arrière-plan. Ne touche pas à session_state."""
     try:
         latest_activities = fetch_page(access_token, page=1, per_page=10)
-        if latest_activities:
-            sync_profile_and_activities(athlete, latest_activities, refresh_token)
+        #if latest_activities:
+        sync_profile_and_activities(athlete, latest_activities, refresh_token, is_from_ui=True)
+        #else:
+        #    print(f"⚠️⚠️ no latest ati")
         athlete_id = athlete.get("id")
         total_db, _ = get_athlete_summary(athlete_id)
         if total_db <= 100:
             all_history = fetch_all_activities_parallel(access_token, max_pages=100)
             if all_history:
-                sync_profile_and_activities(athlete, all_history, refresh_token)
+                sync_profile_and_activities(athlete, all_history, refresh_token, is_from_ui=True)
         
     except Exception as e:
         _sync_status["error"] = str(e)
@@ -109,11 +111,15 @@ if st.session_state.access_token:
 
     athlete = st.session_state.athlete
     refresh_local_data()
+    
+    #print(f"⚠️⚠️⚠️⚠️⚠️")
+    #_run_sync_background(athlete, st.session_state.access_token, st.session_state.refresh_token)
     # --- SYNCHRONISATION EN ARRIÈRE-PLAN (invisible, non bloquante) ---
     if not st.session_state.auto_sync_done:
         if not st.session_state.sync_started:
             _sync_status["done"] = False
             _sync_status["error"] = None
+            
             t = threading.Thread(
                 target=_run_sync_background,
                 args=(athlete, st.session_state.access_token, st.session_state.refresh_token),
