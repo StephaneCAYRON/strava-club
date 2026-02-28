@@ -31,8 +31,7 @@ ADMIN_ID = 5251772
 col_header1, col_header2, col_header3 = st.columns([1, 2, 1])
 with col_header2:
     st.image("images/LogoACETransparent.png", width=400)
-st.info("Voir groupe WhatsApp dédié pour déclarer les bugs, proposer des idées, etc."
-    " 🔗(https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE)"
+st.info("Voir groupe WhatsApp dédié [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) pour déclarer les bugs, proposer des idées, etc."
 )
 
 
@@ -207,9 +206,9 @@ else:
     left_co, cent_co, last_co = st.columns([1, 2, 1])
 
     with cent_co:
-        #st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
-        redirect_button(get_strava_auth_url(), texts["connect"])
-        #redirect_button(get_strava_auth_url(), "test")
+        st.link_button(texts["connect"], get_strava_auth_url(),use_container_width=True, type="primary")
+        #redirect_button(get_strava_auth_url(), texts["connect"])
+        
     
 
 st.markdown("---")
