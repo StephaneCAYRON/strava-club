@@ -160,23 +160,22 @@ def render_tab_leaderboard(texts):
             hauteur_calculee = (nb_lignes * 35) + 40
 
             st.dataframe(
-                # J'ai ajouté 'total_time_hr' et 'avg_speed' (qui était manquant) dans la liste des colonnes affichées
                 leaderboard[['avatar_url', 'Rang', 'firstname', 'total_km', 'total_dplus', 'total_time_hr', 'total_rides', 'avg_km', 'avg_speed', 'avg_dplus', 'avg_gradient']], 
                 hide_index=True,
                 use_container_width=True,
                 height=hauteur_calculee,
                 column_config={
                     "avatar_url": st.column_config.ImageColumn("", width=30),
-                    "Rang": st.column_config.TextColumn("Pos.", width="small"),
-                    "firstname": st.column_config.TextColumn("Athlète"),
-                    "total_km": st.column_config.NumberColumn("Total km", format="%.1f km"),
-                    "total_dplus": st.column_config.NumberColumn("Total D+", format="%d m"),
-                    "total_time_hr": st.column_config.NumberColumn("Temps", format="%.1f h"),
-                    "total_rides": st.column_config.NumberColumn("Sorties"),
-                    "avg_km": st.column_config.NumberColumn("km / sortie", format="%.1f km"),
-                    "avg_speed": st.column_config.NumberColumn("Vitesse Moy.", format="%.1f km/h"),
-                    "avg_dplus": st.column_config.NumberColumn("D+ / sortie", format="%d m"),
-                    "avg_gradient": st.column_config.NumberColumn("% Pente moy.", format="%.2f %%")
+                    "Rang": st.column_config.TextColumn("Pos.", width="10"),
+                    "firstname": st.column_config.TextColumn("Athlète", width="10"),
+                    "total_km": st.column_config.NumberColumn("Km", format="%.1f", width="10"),
+                    "total_dplus": st.column_config.NumberColumn("D+ (m)", format="%d", width="10"),
+                    "total_time_hr": st.column_config.NumberColumn("Temps (h)", format="%.1f", width="small"),
+                    "total_rides": st.column_config.NumberColumn("Sorties", width="10"),
+                    "avg_km": st.column_config.NumberColumn("Km/sortie", format="%.1f", width="10"),
+                    "avg_speed": st.column_config.NumberColumn("Vit. Moy.", format="%.1f km/h", width="10"),
+                    "avg_dplus": st.column_config.NumberColumn("D+/sortie", format="%d m", width="10"),
+                    "avg_gradient": st.column_config.NumberColumn("% Pente moy.", format="%.2f %%", width="10")
                 }
             )
         else:
