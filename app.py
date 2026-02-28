@@ -169,11 +169,11 @@ if st.session_state.access_token:
         }
 
 
-    """approved = [g for g in user_groups_res.data if g["status"] == "approved"]
-    for g in sorted(approved, key=lambda x: x["groups"]["name"]):
-        group_name = f"📊 Stats {g["groups"]["name"]}"
-        pages[group_name] = (lambda texts, grp=g: render_tab_group_page(texts, grp))
-    """
+    #approved = [g for g in user_groups_res.data if g["status"] == "approved"]
+    #for g in sorted(approved, key=lambda x: x["groups"]["name"]):
+    #    group_name = f"📊 Stats {g["groups"]["name"]}"
+    #    pages[group_name] = (lambda texts, grp=g: render_tab_group_page(texts, grp))
+    #
     if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
         pages["🛠️ Console Admin"] = render_tab_admin
 
