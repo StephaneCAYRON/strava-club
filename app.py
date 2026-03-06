@@ -32,7 +32,7 @@ ADMIN_ID = 5251772
 col_header1, col_header2, col_header3 = st.columns([1, 2, 1])
 with col_header2:
     st.image("images/LogoACETransparent.png", width=400)
-    st.info("Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) pour déclarer les bugs, proposer des idées, etc. [v202603062053]")
+    st.info("Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) pour déclarer les bugs, proposer des idées, etc. [v202603062108]")
 
 # --- INITIALISATION ---
 for key in ['access_token', 'refresh_token', 'athlete', 'lang', 'auto_sync_done', 'sync_started']:
