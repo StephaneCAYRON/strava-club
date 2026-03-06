@@ -34,7 +34,7 @@ with col2:
     st.image("images/LogoACETransparent.png", width=400)
     st.info(
         "Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) "
-        "pour déclarer les bugs ou proposer des idées. [v202603062142]"
+        "pour déclarer les bugs ou proposer des idées. [v202603062205]"
     )
 
 # ---------------------------------------------------
