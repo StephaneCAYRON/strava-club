@@ -44,7 +44,7 @@ texts = lang_dict[st.session_state.lang]
 def redirect_button(url, text):
     st.markdown(
         f"""
-        <a href="{url}" target="_self">
+        <a href="{url}" target="_top">
             <button style="
                 width: 100%;
                 background-color: #ff4b4b;
