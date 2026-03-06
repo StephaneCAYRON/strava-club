@@ -1,3 +1,4 @@
+import time
 import sys
 import os
 import datetime
@@ -72,8 +73,6 @@ def sync_single_athlete(profile, is_partial=True):
             gathered_activities = fetch_page(new_access, page=1, per_page=5)
         else:
             total, recent = get_athlete_summary(athlete_id)
-            # Si on force la Full Sync via l'admin, on ignore la limite des 100
-            #if total < 100 or force_full:
             gathered_activities = fetch_all_activities_parallel(new_access)
         
         print(f"⚠️DEBUG⚠️ : {full_name} - {len(gathered_activities)} activités récupérées sur Strava; force full={is_partial}")
@@ -157,6 +156,9 @@ def nightly_sync(yesForOnlyRecentFalseForAll):
             else:
                 # --- EXÉCUTION DE LA SYNCHRO full car pâs fait depuis longtemps ---
                 success, msg = sync_single_athlete(profile, is_partial)
+                print(f"🕒 Attente de 10 minutes pour réinitialiser le quota Strava (100 req/15min)...")
+                # 901 secondes pour être sûr de dépasser la fenêtre glissante de Strava
+                time.sleep(600) 
         else:
             # --- EXÉCUTION DE LA SYNCHRO partielle ---
             success, msg = sync_single_athlete(profile, is_partial)
