@@ -1,6 +1,6 @@
 import streamlit as st
 import threading
-import requests
+import streamlit.components.v1 as components
 from db_operations import *
 from strava_operations import *
 from translation import lang_dict
@@ -73,6 +73,17 @@ if code and st.session_state.access_token is None:
 # LOGIN PAGE
 # ---------------------------------------------------
 
+def login_page_button():
+    left, center, right = st.columns([1,2,1])
+    with center:
+        st.link_button(
+            texts["connect"],
+            get_strava_auth_url(),
+            use_container_width=True,
+            type="primary"
+        )
+    st.stop()
+
 def login_page():
     left, center, right = st.columns([1,2,1])
     with center:
@@ -83,8 +94,24 @@ def login_page():
                 unsafe_allow_html=True
             )
         st.stop()
+
+def login_page_html():
+    left, center, right = st.columns([1,2,1])
+    with center:
+        if st.button("test", use_container_width=True):
+            auth_url = get_strava_auth_url()
+            components.html(
+                f"""
+                <script>
+                window.top.location.href = "{auth_url}";
+                </script>
+                """,
+                height=0,
+            )
+        st.stop()
+
 if not st.session_state.access_token:
-    login_page()
+    login_page_button()
 
 # ---------------------------------------------------
 # LOCAL DATA REFRESH
