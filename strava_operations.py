@@ -79,9 +79,16 @@ def fetch_page(access_token, page, per_page=200):
     response = requests.get(url, headers=headers, params=params)
     if response.status_code == 200:
         return response.json()
+    else:
+        print(f"❌ Erreur API Strava : {response.status_code}")
+        if response.status_code == 429:
+            # Récupération des infos de limite dans les headers
+            usage = response.headers.get('X-ReadRateLimit-Usage', 'Inconnu')
+            limit = response.headers.get('X-ReadRateLimit-Limit', 'Inconnu')
+            print(f"🛑 LIMITE STRAVA DÉPASSÉE (429) ! 📊 Usage actuel (15min, 24h) : {usage}📊 Limites autorisées : {limit}")
     return []
 
-def fetch_all_activities_parallel(access_token, max_pages=100):
+def fetch_all_activities_parallel(access_token, max_pages=30):
     # """Lance plusieurs requêtes en parallèle pour aller vite."""
     all_activities = []
     try:

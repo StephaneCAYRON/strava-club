@@ -2,9 +2,10 @@ import sys
 import io
 import streamlit as st
 from contextlib import redirect_stdout
-from cron_sync import nightly_sync
+from cron_sync import nightly_sync, sync_single_athlete
 from db_operations import *
 from strava_operations import *
+import pandas as pd
 
 def render_tab_admin(texts):
     st.title("🛠️ Console d'Administration")
@@ -17,115 +18,98 @@ def render_tab_admin(texts):
     
     col1.metric("Membres inscrits", total_users)
     col2.metric("Activités totales", total_acts)
-    col3.metric("État du Cron", "❌ KO")
-    
+    #col3.metric("État du Cron", "❌ KO")
     
     # --- LISTE DES MEMBRES ET DERNIÈRE ACTIVITÉ ---
     st.subheader("Utilisateurs")
     
-    # Note: Si tu ne veux pas faire de RPC SQL, on peut le faire en Pandas
-    res = supabase.table("profiles").select("firstname, lastname, id_strava, avatar_url, nb_connection, last_login, last_full_synchro").execute()
-    df_admin = pd.DataFrame(res.data)
-    # Créer l'URL du profil Strava à partir de l'ID
-    df_admin['strava_link'] = df_admin['id_strava'].apply(lambda x: f"https://www.strava.com/athletes/{x}")
-    # Formater la dernière connexion (last_login)
-    if "last_login" in df_admin.columns:
-        df_admin["dernière_connexion"] = pd.to_datetime(df_admin["last_login"], utc=True).dt.tz_convert(None).dt.strftime("%d/%m/%Y %H:%M")
+    res = supabase.table("profiles").select("*").execute()
+    df_admin = pd.DataFrame(res.data).sort_values(by="lastname")
+    
+    df_view = df_admin.copy()
+    df_view['strava_link'] = df_view['id_strava'].apply(lambda x: f"https://www.strava.com/athletes/{x}")
+    if "last_login" in df_view.columns:
+        df_view["dernière_connexion"] = pd.to_datetime(df_view["last_login"], utc=True).dt.tz_convert(None).dt.strftime("%d/%m/%Y %H:%M")
     else:
-        df_admin["dernière_connexion"] = "—"
-    # Organisation des colonnes
+        df_view["dernière_connexion"] = "—"
+        
     cols = ['firstname', 'lastname', 'nb_connection','dernière_connexion', 'strava_link', 'id_strava']
-    df_admin = df_admin[[c for c in cols if c in df_admin.columns]]
-    df_admin = df_admin.sort_values(by="lastname", ascending=True)
-    # 4. Affichage avec configuration avancée
-    nb_lignes = len(df_admin)
-    hauteur_calculee = (nb_lignes * 35) + 40
+    df_view = df_view[[c for c in cols if c in df_view.columns]].sort_values(by="lastname", ascending=True)
+    
+    hauteur_calculee = (len(df_view) * 35) + 40
 
     st.dataframe(
-        df_admin,
+        df_view,
         use_container_width=True,
         hide_index=True,
         height=hauteur_calculee,
         column_config={
-            "avatar": st.column_config.ImageColumn("Photo", width="small"),
             "firstname": "Prénom",
             "lastname": "Nom",
             "nb_connection": st.column_config.NumberColumn("🚀 Connexions", format="%d"),
             "dernière_connexion": st.column_config.TextColumn("Dernière connexion", width="medium"),
-            "strava_link": st.column_config.LinkColumn(
-                "Profil Strava",
-                help="Cliquer pour ouvrir le profil Strava",
-                validate=r"^https://www.strava.com/athletes/.*",
-                display_text="🔗 Voir sur Strava"
-            ),
+            "strava_link": st.column_config.LinkColumn("Profil Strava", display_text="🔗 Voir sur Strava"),
             "id_strava": st.column_config.TextColumn("ID Strava")
         }
     )
+
+    # --- SECTION SYNCHRO INDIVIDUELLE ---
+    st.write("---")
+    st.subheader("👤 Synchronisation Individuelle")
+    st.caption("Sélectionnez un athlète pour mettre à jour uniquement ses données.")
     
+    # Préparation du dictionnaire pour le selectbox (Nom -> Profil Complet)
+    athlete_dict = {f"{row['firstname']} {row['lastname']} (ID: {row['id_strava']})": row for _, row in df_admin.iterrows()}
+    selected_athlete_name = st.selectbox("Choisir un athlète :", list(athlete_dict.keys()))
     
-    #st.dataframe(df_admin, use_container_width=True)
+    col_btn1, col_btn2 = st.columns(2)
+    selected_profile = athlete_dict[selected_athlete_name]
 
-    # --- SECTION SYNCHRO ---
-    st.subheader("Synchronisation Manuelle")
-    st.info("Ce bouton lance la même procédure que le script qui s'exécute toutes les 2 heures (Refresh tokens + Upsert + Cleanup).")
+    if col_btn1.button(f"🔄 Sync Partielle pour {selected_profile['firstname']}", use_container_width=True):
+        with st.spinner("Synchronisation partielle en cours..."):
+            success, msg = sync_single_athlete(selected_profile, is_partial=True)
+            if success: st.success(msg)
+            else: st.error(msg)
 
-    # 1. AJOUT DE LA CHECKBOX
-    # On utilise le session_state pour que la valeur survive au rerun du bouton
-    is_partial_sync = st.checkbox(
-        "🔄 Partial Sync (derniers jours)", 
-        value=True,
-        help="Si décoché, récupère toutes les activités. Si coché, synchro partielle (derniers jours)."
-    )
-    st.info(f"Le bouton lancera : `nightly_sync({is_partial_sync})`.")
+    if col_btn2.button(f"🚀 FULL Sync pour {selected_profile['firstname']}", type="primary", use_container_width=True):
+        with st.spinner("Récupération de l'historique complet (peut prendre du temps)..."):
+            # On passe force_full=True pour contourner les limites éventuelles
+            success, msg = sync_single_athlete(selected_profile, is_partial=False)
+            if success: st.success(msg)
+            else: st.error(msg)
 
-    # Initialisation de l'état du bouton
+
+    # --- SECTION SYNCHRO GLOBALE ---
+    st.write("---")
+    st.subheader("🌍 Synchronisation, tous les utilisateurs)")
+    is_partial_sync = st.checkbox("🔄 Partial Sync si coché (derniers jours uniquement)", value=True)
+
     if "sync_running" not in st.session_state:
         st.session_state.sync_running = False
 
-    # Le bouton se désactive si la synchro est en cours
-    btn_label = "⏳ Synchro en cours..." if st.session_state.sync_running else "🚀 Lancer la synchro"
+    btn_label = "⏳ Synchro en cours..." if st.session_state.sync_running else "Lancer la synchro"
     
     if st.button(btn_label, disabled=st.session_state.sync_running):
         st.session_state.sync_running = True
         st.rerun()
 
-    # Si on vient de cliquer sur le bouton
     if st.session_state.sync_running:
-        st.write("---")
-        # Utilisation de st.status pour un affichage moderne
-        with st.status("Exécution de la synchronisation...", expanded=True) as status:
-            log_area = st.empty() # Zone de texte pour les logs
+        with st.status(f"Exécution de la synchronisation...Partial sync={is_partial_sync}", expanded=True) as status:
+            log_area = st.empty()
             output = io.StringIO()
-            
             try:
-                # Redirection des print vers le buffer
                 with redirect_stdout(output):
-                    # On exécute le script
-                    # Note: pour du vrai temps réel ligne par ligne, 
-                    # il faudrait modifier nightly_sync en generateur, 
-                    # mais redirect_stdout fonctionne très bien ici.
-                    
                     nightly_sync(is_partial_sync)
-                    
-                # Affichage final des logs dans un bloc de code
                 log_area.code(output.getvalue())
-                status.update(label="✅ Synchronisation terminée avec succès !", state="complete", expanded=False)
-                
+                status.update(label="✅ Synchronisation terminée !", state="complete", expanded=False)
             except Exception as e:
-                st.error(f"Une erreur est survenue : {e}")
-                status.update(label="❌ Erreur lors de la synchronisation", state="error")
-            
+                st.error(f"Erreur globale : {e}")
+                status.update(label="❌ Erreur", state="error")
             finally:
-                # On réactive le bouton
                 st.session_state.sync_running = False
-                if st.button("Réinitialiser le bouton"):
+                if st.button("Réinitialiser l'interface"):
                     st.rerun()
 
-    # --- SECTION INFO SYSTÈME ---
     st.write("---")
     st.subheader("💡 Rappel technique")
-    st.caption("""
-    - **GitHub Actions** : Le script tourne aussi automatiquement toutes les 2h.
-    - **Cleanup** : Les activités supprimées sur Strava <TODO> sont retirées de Supabase lors de cette synchro<TODO>.
-    - **Tokens** : Les refresh tokens sont mis à jour en base à chaque passage.
-    """)
+    st.caption("- Le script complet tourne automatiquement en tâche de fond.\n- La synchronisation individuelle met à jour les tokens à la volée.")

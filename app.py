@@ -84,32 +84,6 @@ def login_page_button():
         )
     st.stop()
 
-def login_page():
-    left, center, right = st.columns([1,2,1])
-    with center:
-        if st.button(texts["connect"], use_container_width=True):
-            auth_url = get_strava_auth_url()
-            st.markdown(
-                f'<meta http-equiv="refresh" content="0; url={auth_url}">',
-                unsafe_allow_html=True
-            )
-        st.stop()
-
-def login_page_html():
-    left, center, right = st.columns([1,2,1])
-    with center:
-        if st.button("test", use_container_width=True):
-            auth_url = get_strava_auth_url()
-            components.html(
-                f"""
-                <script>
-                window.top.location.href = "{auth_url}";
-                </script>
-                """,
-                height=0,
-            )
-        st.stop()
-
 if not st.session_state.access_token:
     login_page_button()
 
@@ -262,14 +236,19 @@ with st.sidebar:
                 st.session_state.access_token
             )
             if all_activities:
-                sync_profile_and_activities(
+                success = sync_profile_and_activities(
                     athlete,
                     all_activities,
                     st.session_state.refresh_token
                 )
-                st.session_state.pop("leaderboard_cache", None)
-                st.success(texts["sync_success"])
-                st.rerun()
+                if success:
+                    st.session_state.pop("leaderboard_cache", None)
+                    st.sidebar.success(texts["sync_success"])
+                    st.rerun() # Ne s'exécute QUE si success est True
+                else:
+                    # Si success est False, le code s'arrête ici.
+                    # L'erreur affichée par st.error() dans db_operations restera visible.
+                    st.warning("La synchronisation a échoué. Vérifiez les messages d'erreur ci-dessus.")
 
 # ---------------------------------------------------
 # PAGE RENDER

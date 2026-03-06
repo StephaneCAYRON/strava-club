@@ -41,7 +41,7 @@ def render_tab_sunday(texts):
     df['start_date'] = pd.to_datetime(df['start_date'])
     # On s'assure que c'est le fuseau local ou UTC selon ta BDD, ici on suppose que start_date est bon.
     # Si besoin de convertir en heure locale France : .dt.tz_convert('Europe/Paris') si la donnée est timezone-aware.
-
+    """
     # B. Filtre : C'est un Dimanche (Sunday = 6)
     df = df[df['start_date'].dt.dayofweek == 6]
 
@@ -55,11 +55,12 @@ def render_tab_sunday(texts):
 
     # D. Filtre : Distance > 50km (50000m)
     df = df[df['distance_km'] >= 50] # Supposant que ta vue SQL renvoie des km, sinon /1000
-
+    """
+    df = df[df['is_sunday_challenge'] == True]
     if df.empty:
         st.warning("Aucune sortie dominicale éligible trouvée pour ces critères.")
         return
-
+    
     # --- 3. CALCUL DES POINTS (ALGORITHME DE RÉPARTITION) ---
     
     # On groupe par date (chaque dimanche unique)

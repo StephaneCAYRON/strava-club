@@ -3,6 +3,7 @@ import pandas as pd
 from supabase import create_client, Client
 import os
 import datetime
+import polyline
 
 # --- INIT SUPABASE HYBRIDE ---
 try:
@@ -80,23 +81,60 @@ def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=
 
         # 2. Sauvegarde Activités
         if activities:
-            formatted_activities = [{
-                "id_activity": a["id"],
-                "id_strava": athlete["id"],
-                "name": a["name"],
-                "distance_km": a["distance"] / 1000,
-                "total_elevation_gain": a['total_elevation_gain'], 
-                "moving_time": a.get("moving_time", 0), 
-                "type": a["type"],
-                "start_date": a["start_date"]
-            } for a in activities]
+            formatted_activities = []
+            for a in activities:
+                # Extraction de la polyline
+                poly = a.get('map', {}).get('summary_polyline') if a.get('map') else None
+                
+                #if poly:
+                #    print(f"⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️DEBUG: Polyline trouvée pour {a['name']}")
+                #else:
+                #   print(f"⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️DEBUG: Map vide pour {a['name']}")
+
+                # --- LOGIQUE CHALLENGE DIMANCHE ---
+                is_sunday_challenge = False
+                start_dt = datetime.datetime.fromisoformat(a["start_date"].replace('Z', '+00:00'))
+                # Si Dimanche (6) entre 7h30 et 10h (UTC+1 estimé)
+                if start_dt.weekday() == 6:
+                    local_hour = start_dt.hour + 1
+                    if (5 <= local_hour <= 10):
+                        if (a.get('distance', 0) / 1000) >= 50:
+                            # On vérifie le passage à Escalquens (Mairie : 43.517, 1.562)
+                            if poly and is_passing_through_escalquens(poly):
+                                is_sunday_challenge = True
+
+                formatted_activities.append({
+                    "id_activity": a["id"],
+                    "id_strava": athlete["id"],
+                    "name": a["name"],
+                    "distance_km": a["distance"] / 1000,
+                    "total_elevation_gain": a['total_elevation_gain'], 
+                    "moving_time": a.get("moving_time", 0), 
+                    "type": a["type"],
+                    "start_date": a["start_date"],
+                    "summary_polyline": poly,             # <--- NOUVEAU
+                    "is_sunday_challenge": is_sunday_challenge # <--- NOUVEAU
+                })
             
+            # Upsert massif des activités avec les polylines
             supabase.table("activities").upsert(formatted_activities).execute()
         return True
     except Exception as e:
         st.error(f"Erreur Supabase : {e}")
         return False
 
+def is_passing_through_escalquens(poly_str):
+    """Vérifie si un point de la polyline est à < 3000m de la mairie."""
+    try:
+        points = polyline.decode(poly_str)
+        target = (43.5171, 1.5624)
+        for p in points:
+            if abs(p[0] - target[0]) < 0.03 and abs(p[1] - target[1]) < 0.005:
+                return True
+        return False
+    except:
+        return False
+    
 def get_leaderboard_data():
     """Récupère les données consolidées pour le classement."""
     return supabase.table("activities").select("distance_km, type, start_date, profiles(firstname, avatar_url)").execute()
