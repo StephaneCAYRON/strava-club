@@ -8,8 +8,7 @@ from db_operations import supabase
 from ui_components import common_critria
 
 def render_tab_heatmap(texts):
-    st.header("🗺️ Exploration des parcours")
-    st.caption("Visualisez les Sunday Challenges sous forme de carte thermique ou de traces réelles.")
+    st.header("🗺️ Parcours dominicals")
   
     # --- 1. FILTRES ---
     selected_g, selected_year = common_critria("heatmap")
@@ -93,7 +92,7 @@ def render_tab_heatmap(texts):
     st_folium(
         m, 
         use_container_width=True, 
-        height=600,
+        height=800,
         returned_objects=[],  # 👈 AJOUTE CECI : Empêche le déclenchement d'un rerun au mouvement
         key="map_sunday_challenge" # 👈 AJOUTE UNE CLÉ UNIQUE pour stabiliser le composant
     )
