@@ -89,8 +89,14 @@ def render_tab_heatmap(texts):
                 opacity=0.5
             ).add_to(m)
 
-    # Affichage responsive
-    st_folium(m, use_container_width=True, height=600)
+    # Modifie cette ligne à la fin de ton fichier
+    st_folium(
+        m, 
+        use_container_width=True, 
+        height=600,
+        returned_objects=[],  # 👈 AJOUTE CECI : Empêche le déclenchement d'un rerun au mouvement
+        key="map_sunday_challenge" # 👈 AJOUTE UNE CLÉ UNIQUE pour stabiliser le composant
+    )
     
     # Message d'information mis à jour pour confirmer l'optimisation
     st.info(f"Carte générée à partir de **{len(df_unique_sundays)} sorties uniques** sur la période (filtrées à partir de {len(df_final)} participations globales).")
