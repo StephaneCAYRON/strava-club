@@ -11,7 +11,7 @@ def render_tab_sunday(texts):
     st.caption("""
     **Règle  :** Chaque dimanche, le club met en jeu **30 points**. 
     Ces points sont partagés équitablement entre tous les membres ayant réalisé la sortie club.
-    **Critères de validation de la sortie :** un Dimanche :-), départ : Entre 05h00 et 09h30, Distance : > 50 km.
+    **Critères de validation de la sortie :** un Dimanche :-), départ : Entre 05h00 et 10h00, Distance : > 50 km, passage à Escalquens.
     Si vous êtes peu à braver la météo, c'est le **JACKPOT**.""")
 
     # --- 1. SÉLECTION ET DONNÉES ---

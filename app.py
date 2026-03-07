@@ -12,6 +12,7 @@ from ui_components_tab_admin import render_tab_admin
 from ui_components_tab_regularity import render_tab_regularity
 from ui_components_tab_group_page import render_tab_group_page
 from ui_components_tab_leaderboard import render_tab_leaderboard
+from ui_components_tab_heatmap import render_tab_heatmap
 
 # ---------------------------------------------------
 # CONFIG
@@ -34,7 +35,7 @@ with col2:
     st.image("images/LogoACETransparent.png", width=400)
     st.info(
         "Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) "
-        "pour déclarer les bugs ou proposer des idées. [v202603062205]"
+        "pour déclarer les bugs ou proposer des idées. [v202603070040]"
     )
 
 # ---------------------------------------------------
@@ -193,6 +194,7 @@ if not has_groups:
         texts["tab_sunday"]: render_tab_sunday,
         texts["tab_regularity"]: render_tab_regularity,
         texts["leaderboard_tab"]: render_tab_leaderboard,
+        "🗺️ Heatmap Club": render_tab_heatmap, # Nouvelle entrée
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
         texts["tab_statsPerso"]: render_tab_stats,
@@ -202,6 +204,7 @@ else:
         texts["tab_sunday"]: render_tab_sunday,
         texts["tab_regularity"]: render_tab_regularity,
         texts["leaderboard_tab"]: render_tab_leaderboard,
+        "🗺️ Heatmap Club": render_tab_heatmap, # Nouvelle entrée
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
         texts["tab_statsPerso"]: render_tab_stats,

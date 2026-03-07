@@ -5,3 +5,5 @@ supabase
 plotly
 python-dotenv
 polyline
+folium
+streamlit-folium
