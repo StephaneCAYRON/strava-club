@@ -70,7 +70,7 @@ def sync_single_athlete(profile, is_partial=True):
         
         # Récupération des activités
         if is_partial:
-            gathered_activities = fetch_page(new_access, page=1, per_page=5)
+            gathered_activities = fetch_page(new_access, page=1, per_page=10)
         else:
             total, recent = get_athlete_summary(athlete_id)
             gathered_activities = fetch_all_activities_parallel(new_access)
