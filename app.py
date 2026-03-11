@@ -21,7 +21,7 @@ from ui_components_tab_personal_map import render_tab_personal_map
 # ---------------------------------------------------
 
 ADMIN_ID = 5251772
-VERSION = "v202603112208"
+VERSION = "v202603112215"
 
 st.set_page_config(
     page_title="Amicale Cyclo Escalquens",
@@ -84,6 +84,7 @@ if not st.session_state.access_token:
     c1,c2,c3 = st.columns([1,2,1])
     with c2:
         st.image("images/LogoACETransparent.png", use_container_width=True)
+        st.write(f"Version {VERSION}")
         login_page_button()
 
 # ---------------------------------------------------
