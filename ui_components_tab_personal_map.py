@@ -80,6 +80,7 @@ def render_tab_personal_map(texts):
     # --- 3. CONFIGURATION DE L'AFFICHAGE (Mode et Taille sur une ligne) ---
     
     # --- INITIALISATION DE LA HAUTEUR ---
+    default_tag ="S"
     if 'pmap_size_tag' not in st.session_state:
         # On définit "S" par défaut
         st.session_state.pmap_size_tag = "S"
@@ -88,9 +89,11 @@ def render_tab_personal_map(texts):
         width = st_js.st_javascript("window.innerWidth")
         if (width and width < 768):
             st.session_state.pmap_size_tag = "S"
+            default_tag ="S"
             st.session_state.pmap_height = 400
         else:
             st.session_state.pmap_size_tag = "XL"
+            default_tag ="XL"
             st.session_state.pmap_height = 1000
     # --- INITIALISATION ---
     
@@ -113,7 +116,7 @@ def render_tab_personal_map(texts):
             "Taille de la carte",
             options=list(height_options.keys()),
             key="pmap_size_tag",
-            default=st.session_state.pmap_size_tag
+            default=default_tag
         )
     
         # --- SÉCURITÉ ANTI-NONE ---
@@ -124,7 +127,7 @@ def render_tab_personal_map(texts):
             
         current_height = height_options[selected_tag]
 
-        st.write(f"Debug: current_height={current_height}")
+        #st.write(f"Debug: current_height={current_height}")
 
     # --- 4. DÉCODAGE DES TRACES ---
     all_points = []
@@ -189,7 +192,7 @@ def render_tab_personal_map(texts):
             ).add_to(m)
 
    
-    st.write(f"Debug bis: current_height={current_height}")
+    #st.write(f"Debug bis: current_height={current_height}")
     st_folium(
         m, 
         use_container_width=True, 
