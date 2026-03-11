@@ -32,14 +32,6 @@ st.set_page_config(
 # HEADER -> none pour libérer place
 # ---------------------------------------------------
 
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
-    st.image("images/LogoACETransparent.png", width=400)
-    st.info(
-        "Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) "
-        "pour déclarer les bugs ou proposer des idées. [v202603070129]"
-    )
-
 # ---------------------------------------------------
 # SESSION INIT
 # ---------------------------------------------------
@@ -88,8 +80,10 @@ def login_page_button():
     st.stop()
 
 if not st.session_state.access_token:
-    st.image("images/LogoACETransparent.png", width=400)
-    login_page_button()
+    c1,c2,c3 = st.columns([1,2,1])
+    with c2:
+        st.image("images/LogoACETransparent.png", width=400)
+        login_page_button()
 
 # ---------------------------------------------------
 # LOCAL DATA REFRESH
