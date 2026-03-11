@@ -80,7 +80,7 @@ def render_tab_personal_map(texts):
     # --- 3. CONFIGURATION DE L'AFFICHAGE (Mode et Taille sur une ligne) ---
     
     # --- INITIALISATION DE LA HAUTEUR ---
-    default_tag ="S"
+    default_tag ="XL"
     if 'pmap_size_tag' not in st.session_state:
         # On définit "S" par défaut
         st.session_state.pmap_size_tag = "S"
