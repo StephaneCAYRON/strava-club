@@ -13,12 +13,14 @@ from ui_components_tab_regularity import render_tab_regularity
 from ui_components_tab_group_page import render_tab_group_page
 from ui_components_tab_leaderboard import render_tab_leaderboard
 from ui_components_tab_heatmap import render_tab_heatmap
+from ui_components_tab_advanced_stats import render_tab_advanced_stats
 
 # ---------------------------------------------------
 # CONFIG
 # ---------------------------------------------------
 
 ADMIN_ID = 5251772
+VERSION = "v202603112026"
 
 st.set_page_config(
     page_title="Amicale Cyclo Escalquens",
@@ -27,16 +29,9 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------
-# HEADER
+# HEADER -> none pour libérer place
 # ---------------------------------------------------
 
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
-    st.image("images/LogoACETransparent.png", width=400)
-    st.info(
-        "Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) "
-        "pour déclarer les bugs ou proposer des idées. [v202603070128]"
-    )
 
 # ---------------------------------------------------
 # SESSION INIT
@@ -86,6 +81,7 @@ def login_page_button():
     st.stop()
 
 if not st.session_state.access_token:
+    st.image("images/LogoACETransparent.png", width=400)
     login_page_button()
 
 # ---------------------------------------------------
@@ -197,7 +193,8 @@ if not has_groups:
         "🗺️ Heatmap Club": render_tab_heatmap, # Nouvelle entrée
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
-        texts["tab_statsPerso"]: render_tab_stats,
+        #texts["tab_statsPerso"]: render_tab_stats,
+        "📈 Stats perso": render_tab_advanced_stats # <--- NOUVELLE LIGNE
     }
 else:
     pages = {
@@ -207,7 +204,8 @@ else:
         "🗺️ Heatmap Club": render_tab_heatmap, # Nouvelle entrée
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
-        texts["tab_statsPerso"]: render_tab_stats,
+        #texts["tab_statsPerso"]: render_tab_stats,
+        "📈 Stats perso": render_tab_advanced_stats, # <--- NOUVELLE LIGNE
         texts["group_tab"]: render_tab_groups
     }
 
@@ -252,6 +250,10 @@ with st.sidebar:
                     # Si success est False, le code s'arrête ici.
                     # L'erreur affichée par st.error() dans db_operations restera visible.
                     st.warning("La synchronisation a échoué. Vérifiez les messages d'erreur ci-dessus.")
+    st.divider()
+    st.info("Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) pour déclarer les bugs ou proposer des idées.")
+    st.divider()
+    st.write(f"Version {VERSION}")
 
 # ---------------------------------------------------
 # PAGE RENDER

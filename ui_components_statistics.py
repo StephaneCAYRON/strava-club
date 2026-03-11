@@ -143,8 +143,6 @@ def render_advanced_stats(df_activities):
     st.dataframe(top_elev, hide_index=True, use_container_width=True, column_config=common_column_config)
 
 def render_epic_rides_scatter(df_activities):
-    st.markdown("#### 🌌 Km / D+, vélo uniquement")
-    
     # --- NETTOYAGE RIGOUREUX ---
     df_chart = df_activities.copy()
     
