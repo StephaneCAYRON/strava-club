@@ -21,7 +21,7 @@ from ui_components_tab_personal_map import render_tab_personal_map
 # ---------------------------------------------------
 
 ADMIN_ID = 5251772
-VERSION = "v202603112026"
+VERSION = "v202603112208"
 
 st.set_page_config(
     page_title="Amicale Cyclo Escalquens",
