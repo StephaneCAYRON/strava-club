@@ -13,10 +13,27 @@ from db_operations import supabase
 from ui_components_tab_advanced_stats import render_filter_ui
 
 def render_tab_personal_map(texts):
-    st.title("🗺️ Carte personnelle")
-    
+    #st.title("🗺️ Carte personnelle")
     athlete_id = st.session_state.athlete['id']
-    
+
+    # --- INITIALISATION DE LA HAUTEUR ---
+    default_tag ="XL"
+    if 'pmap_size_tag' not in st.session_state:
+        # On définit "S" par défaut
+        st.session_state.pmap_size_tag = "XL"
+    """
+    if 'pmap_height' not in st.session_state:
+        # On détecte la largeur une seule fois pour le défaut
+        width = st_js.st_javascript("window.innerWidth")
+        if (width and width < 768):
+            st.session_state.pmap_size_tag = "S"
+            default_tag ="S"
+            st.session_state.pmap_height = 400
+        else:
+            st.session_state.pmap_size_tag = "XL"
+            default_tag ="XL"
+            st.session_state.pmap_height = 1000
+    """
     # --- 1. RÉCUPÉRATION DES DONNÉES ---
     # On filtre directement dans la base de données pour ne prendre QUE les activités ayant une trace GPS
     res = supabase.table("activities")\
@@ -78,25 +95,6 @@ def render_tab_personal_map(texts):
         return
 
     # --- 3. CONFIGURATION DE L'AFFICHAGE (Mode et Taille sur une ligne) ---
-    
-    # --- INITIALISATION DE LA HAUTEUR ---
-    default_tag ="XL"
-    if 'pmap_size_tag' not in st.session_state:
-        # On définit "S" par défaut
-        st.session_state.pmap_size_tag = "S"
-    if 'pmap_height' not in st.session_state:
-        # On détecte la largeur une seule fois pour le défaut
-        width = st_js.st_javascript("window.innerWidth")
-        if (width and width < 768):
-            st.session_state.pmap_size_tag = "S"
-            default_tag ="S"
-            st.session_state.pmap_height = 400
-        else:
-            st.session_state.pmap_size_tag = "XL"
-            default_tag ="XL"
-            st.session_state.pmap_height = 1000
-    # --- INITIALISATION ---
-    
 
     c1, c2 = st.columns([1, 1])
 
