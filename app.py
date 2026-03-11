@@ -14,6 +14,7 @@ from ui_components_tab_group_page import render_tab_group_page
 from ui_components_tab_leaderboard import render_tab_leaderboard
 from ui_components_tab_heatmap import render_tab_heatmap
 from ui_components_tab_advanced_stats import render_tab_advanced_stats
+from ui_components_tab_personal_map import render_tab_personal_map
 
 # ---------------------------------------------------
 # CONFIG
@@ -82,7 +83,7 @@ def login_page_button():
 if not st.session_state.access_token:
     c1,c2,c3 = st.columns([1,2,1])
     with c2:
-        st.image("images/LogoACETransparent.png", width=400)
+        st.image("images/LogoACETransparent.png", use_container_width=True)
         login_page_button()
 
 # ---------------------------------------------------
@@ -191,22 +192,24 @@ if not has_groups:
         texts["tab_sunday"]: render_tab_sunday,
         texts["tab_regularity"]: render_tab_regularity,
         texts["leaderboard_tab"]: render_tab_leaderboard,
-        "🗺️ Heatmap Club": render_tab_heatmap, # Nouvelle entrée
+        "🗺️ Carte Club": render_tab_heatmap, # Nouvelle entrée
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
         #texts["tab_statsPerso"]: render_tab_stats,
-        "📈 Stats perso": render_tab_advanced_stats # <--- NOUVELLE LIGNE
+        "📈 Stats perso": render_tab_advanced_stats,
+        "📍 Carte perso": render_tab_personal_map
     }
 else:
     pages = {
         texts["tab_sunday"]: render_tab_sunday,
         texts["tab_regularity"]: render_tab_regularity,
         texts["leaderboard_tab"]: render_tab_leaderboard,
-        "🗺️ Heatmap Club": render_tab_heatmap, # Nouvelle entrée
+        "🗺️ Carte Club": render_tab_heatmap, # Nouvelle entrée
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
         #texts["tab_statsPerso"]: render_tab_stats,
-        "📈 Stats perso": render_tab_advanced_stats, # <--- NOUVELLE LIGNE
+        "📈 Stats perso": render_tab_advanced_stats, 
+        "📍 Carte perso": render_tab_personal_map,
         texts["group_tab"]: render_tab_groups
     }
 

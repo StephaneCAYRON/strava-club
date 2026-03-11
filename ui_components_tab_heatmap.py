@@ -1,14 +1,16 @@
 import streamlit as st
 import pandas as pd
 import folium
+import polyline
+import streamlit_javascript as st_js
+
 from folium.plugins import HeatMap
 from streamlit_folium import st_folium
-import polyline
 from db_operations import supabase
 from ui_components import common_critria
 
 def render_tab_heatmap(texts):
-    st.header("🗺️ Parcours dominicaux")
+    st.header("🗺️ Parcours dominicaux (meilleure visualisation sur PC)")
   
     # --- 1. FILTRES ---
     selected_g, selected_year = common_critria("heatmap")
@@ -20,13 +22,13 @@ def render_tab_heatmap(texts):
     # Ajout du choix du mode d'affichage
     display_mode = st.segmented_control(
         "Mode d'affichage", 
-        ["🔥 Heatmap", "🛤️ Traces (Lignes)"], 
-        default="🔥 Heatmap"
+        ["🛤️ Traces","🔥 Heatmap"], 
+        default="🛤️ Traces"
     )
 
     # --- 2. RÉCUPÉRATION DES DONNÉES ---
     query = supabase.table("activities")\
-        .select("summary_polyline, start_date")\
+        .select("summary_polyline, start_date, name, id_activity")\
         .eq("is_sunday_challenge", True)\
         .not_.is_("summary_polyline", "null")\
         .gte("start_date", f"{selected_year}-01-01")\
@@ -79,20 +81,53 @@ def render_tab_heatmap(texts):
     if display_mode == "🔥 Heatmap":
         HeatMap(all_points, radius=5, blur=5, min_opacity=0.4).add_to(m)
     else:
-        # Affichage des lignes réelles
-        for line in list_of_lines:
+        # Affichage des lignes réelles avec Tooltip
+        # On itère directement sur le dataframe unique pour avoir accès aux métadonnées
+        for _, act in df_unique_sundays.iterrows():
+            line_points = polyline.decode(act['summary_polyline'])
+            if not line_points:
+                continue
+                
+            # Préparation des infos
+            date_obj = pd.to_datetime(act['start_date']).strftime('%d/%m/%Y')
+            strava_url = f"https://www.strava.com/activities/{act['id_activity']}"
+            
+            # HTML pour le Tooltip (au survol)
+            tooltip_html = f"""
+                <div style="font-family: sans-serif;">
+                    <b>{act['name']}</b><br>
+                    📅 {date_obj}<br>
+                    <span style="color: #FC4C02;">🖱️ Cliquer pour voir sur Strava</span>
+                </div>
+            """
+            
+            # HTML pour le Popup (au clic) pour permettre de cliquer sur le lien
+            popup_html = f'<a href="{strava_url}" target="_blank">Ouvrir dans Strava 🔗</a>'
+
             folium.PolyLine(
-                line, 
-                color="#FF4B4B", # Rouge Streamlit pour le style
-                weight=2, 
-                opacity=0.5
+                line_points, 
+                color="#FF4B4B", 
+                weight=3, 
+                opacity=0.6,
+                tooltip=folium.Tooltip(tooltip_html),
+                popup=folium.Popup(popup_html, max_width=300)
             ).add_to(m)
+
+    # --- 5. DÉTECTION DE LA LARGEUR POUR LE RESPONSIVE ---
+    # On récupère la largeur de la fenêtre via JS
+    width = st_js.st_javascript("window.innerWidth")
+    
+    # Par défaut on met 800, mais si JS renvoie une valeur < 768px (mobile), on passe à 400
+    # Note : au tout premier chargement, width peut être 0 ou None
+    map_height = 800
+    if width and width < 768:
+        map_height = 400
 
     # Modifie cette ligne à la fin de ton fichier
     st_folium(
         m, 
         use_container_width=True, 
-        height=800,
+        height=map_height,
         returned_objects=[],  # 👈 AJOUTE CECI : Empêche le déclenchement d'un rerun au mouvement
         key="map_sunday_challenge" # 👈 AJOUTE UNE CLÉ UNIQUE pour stabiliser le composant
     )

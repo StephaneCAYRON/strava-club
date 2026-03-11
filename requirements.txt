@@ -7,3 +7,4 @@ python-dotenv
 polyline
 folium
 streamlit-folium
+streamlit-javascript
