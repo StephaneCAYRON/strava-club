@@ -32,6 +32,13 @@ st.set_page_config(
 # HEADER -> none pour libérer place
 # ---------------------------------------------------
 
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    st.image("images/LogoACETransparent.png", width=400)
+    st.info(
+        "Groupe WhatsApp [🔗ici](https://chat.whatsapp.com/JRpGyeubaI89ulRTu21TYE) "
+        "pour déclarer les bugs ou proposer des idées. [v202603070129]"
+    )
 
 # ---------------------------------------------------
 # SESSION INIT

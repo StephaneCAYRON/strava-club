@@ -8,7 +8,7 @@ from db_operations import supabase
 from ui_components import common_critria
 
 def render_tab_heatmap(texts):
-    st.header("🗺️ Parcours dominicals")
+    st.header("🗺️ Parcours dominicaux")
   
     # --- 1. FILTRES ---
     selected_g, selected_year = common_critria("heatmap")
