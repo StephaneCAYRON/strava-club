@@ -196,6 +196,7 @@ if not has_groups:
         #texts["tab_statsPerso"]: render_tab_stats,
         "📈 Stats perso": _lazy("ui_components_tab_advanced_stats", "render_tab_advanced_stats"),
         "📍 Carte perso": _lazy("ui_components_tab_personal_map", "render_tab_personal_map"),
+        "🧬 Ma Bio Sportive": _lazy("ui_components_tab_bio", "render_tab_bio"),
     }
 else:
     pages = {
@@ -208,6 +209,7 @@ else:
         #texts["tab_statsPerso"]: render_tab_stats,
         "📈 Stats perso": _lazy("ui_components_tab_advanced_stats", "render_tab_advanced_stats"),
         "📍 Carte perso": _lazy("ui_components_tab_personal_map", "render_tab_personal_map"),
+        "🧬 Ma Bio Sportive": _lazy("ui_components_tab_bio", "render_tab_bio"),
         texts["group_tab"]: _lazy("ui_components_tab_groups", "render_tab_groups"),
     }
 
