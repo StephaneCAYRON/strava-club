@@ -3,38 +3,7 @@ import pandas as pd
 import altair as alt
 from strava_operations import *
 from db_operations import *
-from ui_components import common_critria
-
-
-def make_display_names(df):
-    """
-    Génère des noms d'affichage uniques pour chaque athlète.
-    Commence par le prénom seul, et ajoute progressivement des lettres du nom
-    de famille jusqu'à ce que tous les noms soient uniques.
-    Retourne un dict {id_strava: display_name}.
-    """
-    athletes = df[['id_strava', 'firstname', 'lastname']].drop_duplicates('id_strava').copy()
-    athletes['lastname'] = athletes['lastname'].fillna('')
-    athletes['letters'] = 0
-
-    max_len = int(athletes['lastname'].str.len().max()) if len(athletes) > 0 else 0
-
-    for _ in range(max_len + 2):
-        def make_name(row):
-            if row['letters'] == 0:
-                return row['firstname']
-            suffix = row['lastname'][:int(row['letters'])]
-            return f"{row['firstname']} {suffix}." if suffix else row['firstname']
-
-        athletes['display_name'] = athletes.apply(make_name, axis=1)
-
-        dup_mask = athletes['display_name'].duplicated(keep=False)
-        if not dup_mask.any():
-            break
-
-        athletes.loc[dup_mask, 'letters'] += 1
-
-    return dict(zip(athletes['id_strava'], athletes['display_name']))
+from ui_components import common_critria, make_display_names
 
 
 def render_tab_regularity(texts):

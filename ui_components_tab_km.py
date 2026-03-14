@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 from strava_operations import *
 from db_operations import *
-from ui_components import common_critria
+from ui_components import common_critria, make_display_names
 
 def render_tab_km(texts):
     """Contenu de l'onglet Leaderboard avec Compteur de sorties pour l'année"""
@@ -30,7 +30,9 @@ def render_tab_km(texts):
 
     if res.data:
         df = pd.DataFrame(res.data)
-        
+        display_names_map = make_display_names(df)
+        df['display_name'] = df['id_strava'].map(display_names_map)
+
         # Traitement Date
         df['start_date'] = pd.to_datetime(df['start_date'])
         df['Year'] = df['start_date'].dt.year
@@ -62,7 +64,7 @@ def render_tab_km(texts):
 
         # --- CLASSEMENT (AGGRÉGATION MULTIPLE) ---
         # On utilise .agg pour calculer la somme des km ET compter le nombre d'activités
-        leaderboard = df_final.groupby(['id_strava','firstname', 'avatar_url']).agg(
+        leaderboard = df_final.groupby(['id_strava','display_name', 'avatar_url']).agg(
             total_km=('distance_km', 'sum'),
             total_rides=('distance_km', 'count') # Compte le nombre de lignes
         ).sort_values('total_km', ascending=False).reset_index()
@@ -85,7 +87,7 @@ def render_tab_km(texts):
                     st.image(avatar, width=50)
                 
                 with c2:
-                    st.markdown(f"**{rank_icon} {row['firstname']}**")
+                    st.markdown(f"**{rank_icon} {row['display_name']}**")
                     #if is_global_view:
                     st.caption(f"{row['total_rides']} {texts['rides']}")
                 with c3:
@@ -110,11 +112,11 @@ def render_tab_km(texts):
 
             # 1. On groupe par athlète et par mois, et on FAIT LA SOMME de la colonne distance
             # Remplace 'distance' par le nom exact de ta colonne (ex: 'distance_km')
-            df_chart = df_year.groupby(['firstname', 'Mois_Num', 'Mois'])['distance_km'].sum().reset_index(name='monthly_sum')
+            df_chart = df_year.groupby(['display_name', 'Mois_Num', 'Mois'])['distance_km'].sum().reset_index(name='monthly_sum')
 
             # 2. On calcule le cumul par athlète au fil des mois
-            df_chart = df_chart.sort_values(['firstname', 'Mois_Num'])
-            df_chart['cumul_km'] = df_chart.groupby('firstname')['monthly_sum'].cumsum()
+            df_chart = df_chart.sort_values(['display_name', 'Mois_Num'])
+            df_chart['cumul_km'] = df_chart.groupby('display_name')['monthly_sum'].cumsum()
 
             # Optionnel : Si tes données sont en mètres dans le dataframe, divise par 1000
             # df_chart['cumul_km'] = df_chart['cumul_km'] / 1000
@@ -123,8 +125,8 @@ def render_tab_km(texts):
             line_chart = alt.Chart(df_chart).mark_line(point=True).encode(
                 x=alt.X('Mois_Num:O', title="Mois", axis=alt.Axis(labelAngle=0)),
                 y=alt.Y('cumul_km:Q', title="Total cumulé (km)"),
-                color=alt.Color('firstname:N', title="Athlète"),
-                tooltip=['firstname', 'Mois', alt.Tooltip('cumul_km:Q', format='.1f')]
+                color=alt.Color('display_name:N', title="Athlète"),
+                tooltip=['display_name', 'Mois', alt.Tooltip('cumul_km:Q', format='.1f')]
             ).properties(
                 height=500
             ).interactive()
@@ -138,7 +140,7 @@ def render_tab_km(texts):
             nb_lignes = len(leaderboard)
             hauteur_calculee = (nb_lignes * 35) + 40
             leaderboard['Athlete'] = [
-                f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['display_name']}"
                 for i, row in leaderboard.iterrows()
             ]
             st.dataframe(

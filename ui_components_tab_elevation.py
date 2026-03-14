@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 from strava_operations import *
 from db_operations import *
-from ui_components import common_critria
+from ui_components import common_critria, make_display_names
 
 def render_tab_dplus(texts):
     """Contenu de l'onglet Leaderboard avec Cumul du dénivelé (D+) pour l'année"""
@@ -19,7 +19,9 @@ def render_tab_dplus(texts):
     
     if res.data:
         df = pd.DataFrame(res.data)
-        
+        display_names_map = make_display_names(df)
+        df['display_name'] = df['id_strava'].map(display_names_map)
+
         # Traitement Date
         df['start_date'] = pd.to_datetime(df['start_date'])
         df['Year'] = df['start_date'].dt.year
@@ -46,7 +48,7 @@ def render_tab_dplus(texts):
 
         # --- CLASSEMENT (AGGRÉGATION MULTIPLE) ---
         # Note: 'total_elevation_gain' est le nom standard Strava pour le D+
-        leaderboard = df_final.groupby(['id_strava','firstname', 'avatar_url']).agg(
+        leaderboard = df_final.groupby(['id_strava','display_name', 'avatar_url']).agg(
             total_dplus=('total_elevation_gain', 'sum'),
             total_rides=('total_elevation_gain', 'count') 
         ).sort_values('total_dplus', ascending=False).reset_index()
@@ -66,7 +68,7 @@ def render_tab_dplus(texts):
                     st.image(avatar, width=50)
                 
                 with c2:
-                    st.markdown(f"**{rank_icon} {row['firstname']}**")
+                    st.markdown(f"**{rank_icon} {row['display_name']}**")
                     st.caption(f"{row['total_rides']} {texts['rides']}")
                 with c3:
                     strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
@@ -86,18 +88,18 @@ def render_tab_dplus(texts):
             st.subheader("Progression mensuelle (D+)")
 
             # 1. Groupe par athlète et mois (Somme du D+)
-            df_chart = df_year.groupby(['firstname', 'Mois_Num', 'Mois'])['total_elevation_gain'].sum().reset_index(name='monthly_sum')
+            df_chart = df_year.groupby(['display_name', 'Mois_Num', 'Mois'])['total_elevation_gain'].sum().reset_index(name='monthly_sum')
 
             # 2. Cumul par athlète
-            df_chart = df_chart.sort_values(['firstname', 'Mois_Num'])
-            df_chart['cumul_dplus'] = df_chart.groupby('firstname')['monthly_sum'].cumsum()
+            df_chart = df_chart.sort_values(['display_name', 'Mois_Num'])
+            df_chart['cumul_dplus'] = df_chart.groupby('display_name')['monthly_sum'].cumsum()
 
             # 3. Création du graphique Altair
             line_chart = alt.Chart(df_chart).mark_line(point=True).encode(
                 x=alt.X('Mois_Num:O', title="Mois", axis=alt.Axis(labelAngle=0)),
                 y=alt.Y('cumul_dplus:Q', title="Dénivelé cumulé (m)"),
-                color=alt.Color('firstname:N', title="Athlète"),
-                tooltip=['firstname', 'Mois', alt.Tooltip('cumul_dplus:Q', format=',.0f', title="Cumul D+ (m)")]
+                color=alt.Color('display_name:N', title="Athlète"),
+                tooltip=['display_name', 'Mois', alt.Tooltip('cumul_dplus:Q', format=',.0f', title="Cumul D+ (m)")]
             ).properties(
                 height=500
             ).interactive()
@@ -107,7 +109,7 @@ def render_tab_dplus(texts):
             # --- TABLEAU COMPLET ---
             #with st.expander("Classement complet", True):
             leaderboard['Athlete'] = [
-                f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+                f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['display_name']}"
                 for i, row in leaderboard.iterrows()
             ]
 

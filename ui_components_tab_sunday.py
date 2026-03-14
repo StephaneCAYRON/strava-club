@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 import datetime
 from db_operations import *
-from ui_components import common_critria
+from ui_components import common_critria, make_display_names
 from strava_operations import *
 
 def render_tab_sunday(texts):
@@ -34,7 +34,8 @@ def render_tab_sunday(texts):
         return
 
     df = pd.DataFrame(res.data)
-    
+    display_names_map = make_display_names(df)
+
     # --- 2. FILTRAGE DES ACTIVITÉS (LE CŒUR DU SYSTÈME) ---
     
     # A. Conversion des dates
@@ -86,7 +87,7 @@ def render_tab_sunday(texts):
         points_per_person = 30 / nb_part
         
         # On stocke l'historique de ce dimanche
-        names_list = ", ".join(participants['firstname'].tolist())
+        names_list = ", ".join(participants['id_strava'].map(display_names_map).tolist())
         sunday_stats.append({
             'Date': d,
             'Points Distribués': 30,
@@ -100,7 +101,7 @@ def render_tab_sunday(texts):
             athlete_scores.append({
                 'date': d,
                 'id_strava': row['id_strava'],
-                'firstname': row['firstname'],
+                'display_name': display_names_map.get(row['id_strava'], row['firstname']),
                 'avatar_url': row['avatar_url'],
                 'points': points_per_person
             })
@@ -111,7 +112,7 @@ def render_tab_sunday(texts):
     # --- 4. AFFICHAGE : PODIUM (TOP 3) ---
     
     # Calcul du total par athlète
-    leaderboard = df_scores.groupby(['id_strava', 'firstname', 'avatar_url'])['points'].sum().reset_index()
+    leaderboard = df_scores.groupby(['id_strava', 'display_name', 'avatar_url'])['points'].sum().reset_index()
     leaderboard = leaderboard.sort_values('points', ascending=False).reset_index(drop=True)
 
     #st.markdown("#### 🏆 Le Podium Dominical")
@@ -123,7 +124,7 @@ def render_tab_sunday(texts):
         row = leaderboard.iloc[i]
         with cols[i]:
             #st.markdown(f"<div style='text-align:center'>{medals[i]} <b>{row['firstname']}</b></div>", unsafe_allow_html=True)
-            st.markdown(f"**{medals[i]} {row['firstname']}**")
+            st.markdown(f"**{medals[i]} {row['display_name']}**")
             st.image(get_safe_avatar_url(row['avatar_url']), width=50)
             # Affichage de l'avatar rond
             """
@@ -156,7 +157,7 @@ def render_tab_sunday(texts):
 
     # Création de la colonne combinée Rang + Prénom
     leaderboard['Athlete'] = [
-        f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['firstname']}"
+        f"{'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else f'#{i+1}'} {row['display_name']}"
         for i, row in leaderboard.iterrows()
     ]
 
@@ -180,21 +181,21 @@ def render_tab_sunday(texts):
     
     # On doit calculer la somme cumulative pour chaque athlète au fil du temps
     # 1. Pivot ou Groupby date + athlète
-    df_cumul = df_scores.groupby(['date', 'firstname'])['points'].sum().reset_index()
+    df_cumul = df_scores.groupby(['date', 'display_name'])['points'].sum().reset_index()
     df_cumul['date'] = pd.to_datetime(df_cumul['date'])
-    
+
     # 2. On trie par date
     df_cumul = df_cumul.sort_values('date')
-    
+
     # 3. CumSum par athlète
-    df_cumul['cum_points'] = df_cumul.groupby('firstname')['points'].cumsum()
+    df_cumul['cum_points'] = df_cumul.groupby('display_name')['points'].cumsum()
 
     # Graphique Altair
     chart = alt.Chart(df_cumul).mark_line(point=True).encode(
         x=alt.X('date:T', title='Date', axis=alt.Axis(format='%d %b')),
         y=alt.Y('cum_points:Q', title='Points Cumulés'),
-        color=alt.Color('firstname:N', title='Athlète'),
-        tooltip=['date', 'firstname', alt.Tooltip('cum_points', format='.1f')]
+        color=alt.Color('display_name:N', title='Athlète'),
+        tooltip=['date', 'display_name', alt.Tooltip('cum_points', format='.1f')]
     ).properties(height=400)
 
     st.altair_chart(chart, use_container_width=True)
@@ -219,10 +220,10 @@ def render_tab_sunday(texts):
 
     # 3. Nettoyage et Tri
     # On garde : Date, Pot, Nb Participants, Gain Perso, Nom de l'athlète
-    df_final = df_detailed_view[['Date', 'Points Distribués', 'Participants', 'points', 'firstname']]
-    
+    df_final = df_detailed_view[['Date', 'Points Distribués', 'Participants', 'points', 'display_name']]
+
     # Tri : Date décroissante (plus récent en haut), puis alphabétique pour les noms
-    df_final = df_final.sort_values(by=['Date', 'firstname'], ascending=[False, True])
+    df_final = df_final.sort_values(by=['Date', 'display_name'], ascending=[False, True])
 
     # 4. Affichage
     # Calcul dynamique de la hauteur
@@ -239,6 +240,6 @@ def render_tab_sunday(texts):
             "Points Distribués": st.column_config.NumberColumn("Pot (Pts)", format="%d"),
             "Participants": st.column_config.NumberColumn("Cyclistes", format="%d 🚴"),
             "points": st.column_config.NumberColumn("Gain", format="%.2f pts"),
-            "firstname": st.column_config.TextColumn("Athlète Présent", width="medium"),
+            "display_name": st.column_config.TextColumn("Athlète Présent", width="medium"),
         }
     )
