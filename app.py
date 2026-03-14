@@ -5,16 +5,13 @@ from db_operations import *
 from strava_operations import *
 from translation import lang_dict
 from ui_components_sidebar import sidebar_component
-from ui_components import render_tab_stats
-from ui_components_tab_sunday import render_tab_sunday
-from ui_components_tab_groups import render_tab_groups
-from ui_components_tab_admin import render_tab_admin
-from ui_components_tab_regularity import render_tab_regularity
-from ui_components_tab_group_page import render_tab_group_page
-from ui_components_tab_leaderboard import render_tab_leaderboard
-from ui_components_tab_heatmap import render_tab_heatmap
-from ui_components_tab_advanced_stats import render_tab_advanced_stats
-from ui_components_tab_personal_map import render_tab_personal_map
+import importlib
+
+def _lazy(module, func):
+    """Import le module seulement quand la page est effectivement rendue."""
+    def _render(texts):
+        return getattr(importlib.import_module(module), func)(texts)
+    return _render
 
 # ---------------------------------------------------
 # CONFIG
@@ -189,29 +186,29 @@ has_groups = len(user_groups_res.data) > 0
 if not has_groups:
     default_page = "👥 Mes Groupes"
     pages = {
-        texts["group_tab"]: render_tab_groups,
-        texts["tab_sunday"]: render_tab_sunday,
-        texts["tab_regularity"]: render_tab_regularity,
-        texts["leaderboard_tab"]: render_tab_leaderboard,
-        "🗺️ Carte Club": render_tab_heatmap, # Nouvelle entrée
+        texts["group_tab"]: _lazy("ui_components_tab_groups", "render_tab_groups"),
+        texts["tab_sunday"]: _lazy("ui_components_tab_sunday", "render_tab_sunday"),
+        texts["tab_regularity"]: _lazy("ui_components_tab_regularity", "render_tab_regularity"),
+        texts["leaderboard_tab"]: _lazy("ui_components_tab_leaderboard", "render_tab_leaderboard"),
+        "🗺️ Carte Club": _lazy("ui_components_tab_heatmap", "render_tab_heatmap"),
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
         #texts["tab_statsPerso"]: render_tab_stats,
-        "📈 Stats perso": render_tab_advanced_stats,
-        "📍 Carte perso": render_tab_personal_map
+        "📈 Stats perso": _lazy("ui_components_tab_advanced_stats", "render_tab_advanced_stats"),
+        "📍 Carte perso": _lazy("ui_components_tab_personal_map", "render_tab_personal_map"),
     }
 else:
     pages = {
-        texts["tab_sunday"]: render_tab_sunday,
-        texts["tab_regularity"]: render_tab_regularity,
-        texts["leaderboard_tab"]: render_tab_leaderboard,
-        "🗺️ Carte Club": render_tab_heatmap, # Nouvelle entrée
+        texts["tab_sunday"]: _lazy("ui_components_tab_sunday", "render_tab_sunday"),
+        texts["tab_regularity"]: _lazy("ui_components_tab_regularity", "render_tab_regularity"),
+        texts["leaderboard_tab"]: _lazy("ui_components_tab_leaderboard", "render_tab_leaderboard"),
+        "🗺️ Carte Club": _lazy("ui_components_tab_heatmap", "render_tab_heatmap"),
         #texts["dplus_tab"]: render_tab_dplus,
         #texts["leaderboard_tab"]: render_tab_km,
         #texts["tab_statsPerso"]: render_tab_stats,
-        "📈 Stats perso": render_tab_advanced_stats, 
-        "📍 Carte perso": render_tab_personal_map,
-        texts["group_tab"]: render_tab_groups
+        "📈 Stats perso": _lazy("ui_components_tab_advanced_stats", "render_tab_advanced_stats"),
+        "📍 Carte perso": _lazy("ui_components_tab_personal_map", "render_tab_personal_map"),
+        texts["group_tab"]: _lazy("ui_components_tab_groups", "render_tab_groups"),
     }
 
 #approved = [g for g in user_groups_res.data if g["status"] == "approved"]
@@ -220,7 +217,7 @@ else:
 #    pages[group_name] = (lambda texts, grp=g: render_tab_group_page(texts, grp))
 #
 if st.session_state.athlete['id'] == ADMIN_ID: # Ton ID
-    pages["🛠️ Console Admin"] = render_tab_admin
+    pages["🛠️ Console Admin"] = _lazy("ui_components_tab_admin", "render_tab_admin")
 
 
 # ---------------------------------------------------
@@ -249,6 +246,8 @@ with st.sidebar:
                 )
                 if success:
                     st.session_state.pop("leaderboard_cache", None)
+                    get_athlete_summary.clear()
+                    get_user_memberships.clear()
                     st.sidebar.success(texts["sync_success"])
                     st.rerun() # Ne s'exécute QUE si success est True
                 else:
