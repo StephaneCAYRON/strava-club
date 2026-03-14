@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from db_operations import get_leaderboard_by_group_by_year_cached, get_years_for_group
+from ui_components import make_display_names
 from ui_components_achievements import render_group_milestones
     
 def render_tab_group_page(texts, group_info):
@@ -30,6 +31,8 @@ def render_tab_group_page(texts, group_info):
         return
 
     df = pd.DataFrame(res.data)
+    display_names_map = make_display_names(df)
+    df['display_name'] = df['id_strava'].map(display_names_map)
     df["start_date"] = pd.to_datetime(df["start_date"])
     df["Year"] = df["start_date"].dt.year
     df["Mois"] = df["start_date"].dt.month_name()
@@ -56,7 +59,7 @@ def render_tab_group_page(texts, group_info):
         title_suffix = f"{selected_period} {selected_year}"
 
     leaderboard = (
-        df_final.groupby(["id_strava", "firstname", "avatar_url"])
+        df_final.groupby(["id_strava", "display_name", "avatar_url"])
         .agg(
             km_cumules=("distance_km", "sum"),
             dplus_cumule=("total_elevation_gain", "sum"),
@@ -67,7 +70,7 @@ def render_tab_group_page(texts, group_info):
 
     leaderboard = leaderboard.rename(
         columns={
-            "firstname": "Membre",
+            "display_name": "Membre",
             "km_cumules": "Km cumulés",
             "dplus_cumule": "D+ cumulé (m)",
         }

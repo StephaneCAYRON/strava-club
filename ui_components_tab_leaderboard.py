@@ -4,7 +4,7 @@ import altair as alt
 import numpy as np
 from strava_operations import *
 from db_operations import *
-from ui_components import common_critria
+from ui_components import common_critria, make_display_names
 
 def render_tab_leaderboard(texts):
     """Page unique fusionnée avec tableau de statistiques complet en bas de page"""
@@ -49,6 +49,8 @@ def render_tab_leaderboard(texts):
     
     if res.data:
         df = pd.DataFrame(res.data)
+        display_names_map = make_display_names(df)
+        df['display_name'] = df['id_strava'].map(display_names_map)
         df['start_date'] = pd.to_datetime(df['start_date'])
         df['Year'] = df['start_date'].dt.year
         df['Mois'] = df['start_date'].dt.month_name()
@@ -81,7 +83,7 @@ def render_tab_leaderboard(texts):
         df_final = df_final.copy()
         df_final['gradient'] = (df_final['total_elevation_gain'] / (df_final['distance_km'].replace(0, np.nan) * 1000)) * 100
         
-        leaderboard = df_final.groupby(['id_strava','firstname', 'avatar_url']).agg(
+        leaderboard = df_final.groupby(['id_strava','display_name', 'avatar_url']).agg(
             total_km=('distance_km', 'sum'),
             total_dplus=('total_elevation_gain', 'sum'),
             total_rides=('distance_km', 'count'),
@@ -120,7 +122,7 @@ def render_tab_leaderboard(texts):
                 c1, c2, c3 = st.columns([1, 4, 2])
                 with c1: st.image(avatar, width=50)
                 with c2:
-                    st.markdown(f"**{rank_icon} {row['firstname']}**")
+                    st.markdown(f"**{rank_icon} {row['display_name']}**")
                     st.caption(f"{row['total_rides']} {texts['rides']}")
                 with c3:
                     strava_profile_url = f"https://www.strava.com/athletes/{row['id_strava']}"
@@ -139,15 +141,15 @@ def render_tab_leaderboard(texts):
             # --- 5. GRAPHIQUE D'ÉVOLUTION ---
             st.write("")
             st.subheader(f"Progression mensuelle ({label_unit})")
-            df_chart = df_year.groupby(['firstname', 'Mois_Num', 'Mois'])[col_target].sum().reset_index(name='monthly_sum')
-            df_chart = df_chart.sort_values(['firstname', 'Mois_Num'])
-            df_chart['cumul_val'] = df_chart.groupby('firstname')['monthly_sum'].cumsum()
+            df_chart = df_year.groupby(['display_name', 'Mois_Num', 'Mois'])[col_target].sum().reset_index(name='monthly_sum')
+            df_chart = df_chart.sort_values(['display_name', 'Mois_Num'])
+            df_chart['cumul_val'] = df_chart.groupby('display_name')['monthly_sum'].cumsum()
 
             line_chart = alt.Chart(df_chart).mark_line(point=True).encode(
                 x=alt.X('Mois_Num:O', title="Mois"),
                 y=alt.Y('cumul_val:Q', title=chart_label),
-                color=alt.Color('firstname:N', title="Athlète"),
-                tooltip=['firstname', 'Mois', alt.Tooltip('cumul_val:Q', format=',.1f')]
+                color=alt.Color('display_name:N', title="Athlète"),
+                tooltip=['display_name', 'Mois', alt.Tooltip('cumul_val:Q', format=',.1f')]
             ).properties(height=400).interactive()
             st.altair_chart(line_chart, use_container_width=True)    
 
@@ -166,7 +168,7 @@ def render_tab_leaderboard(texts):
                                 title="Pente Moy. (%)", 
                                 scale=alt.Scale(scheme='redyellowgreen', reverse=True)),
                 tooltip=[
-                    alt.Tooltip('firstname:N', title="Athlète"),
+                    alt.Tooltip('display_name:N', title="Athlète"),
                     alt.Tooltip('total_km:Q', format=".1f", title="Total Km"),
                     alt.Tooltip('total_dplus:Q', format=".0f", title="Total D+"),
                     alt.Tooltip('avg_gradient:Q', format=".2f", title="Pente moy. %"),
@@ -182,7 +184,7 @@ def render_tab_leaderboard(texts):
                 baseline='middle',
                 dx=7
             ).encode(
-                text='firstname:N'
+                text='display_name:N'
             )
 
             st.altair_chart(scatter_chart + text, use_container_width=True)
@@ -197,14 +199,14 @@ def render_tab_leaderboard(texts):
             hauteur_calculee = (nb_lignes * 35) + 40
 
             st.dataframe(
-                leaderboard[['avatar_url', 'Rang', 'firstname', 'total_km', 'total_dplus', 'total_time_hr', 'total_rides', 'avg_km', 'avg_speed', 'avg_dplus', 'avg_gradient']], 
+                leaderboard[['avatar_url', 'Rang', 'display_name', 'total_km', 'total_dplus', 'total_time_hr', 'total_rides', 'avg_km', 'avg_speed', 'avg_dplus', 'avg_gradient']],
                 hide_index=True,
                 use_container_width=True,
                 height=hauteur_calculee,
                 column_config={
                     "avatar_url": st.column_config.ImageColumn("", width=30),
                     "Rang": st.column_config.TextColumn("Pos.", width="10"),
-                    "firstname": st.column_config.TextColumn("Athlète", width="10"),
+                    "display_name": st.column_config.TextColumn("Athlète", width="10"),
                     "total_km": st.column_config.NumberColumn("Km", format="%.1f", width="10"),
                     "total_dplus": st.column_config.NumberColumn("D+ (m)", format="%d", width="10"),
                     "total_time_hr": st.column_config.NumberColumn("Temps (h)", format="%.1f", width="small"),
