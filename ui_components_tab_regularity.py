@@ -5,6 +5,38 @@ from strava_operations import *
 from db_operations import *
 from ui_components import common_critria
 
+
+def make_display_names(df):
+    """
+    Génère des noms d'affichage uniques pour chaque athlète.
+    Commence par le prénom seul, et ajoute progressivement des lettres du nom
+    de famille jusqu'à ce que tous les noms soient uniques.
+    Retourne un dict {id_strava: display_name}.
+    """
+    athletes = df[['id_strava', 'firstname', 'lastname']].drop_duplicates('id_strava').copy()
+    athletes['lastname'] = athletes['lastname'].fillna('')
+    athletes['letters'] = 0
+
+    max_len = int(athletes['lastname'].str.len().max()) if len(athletes) > 0 else 0
+
+    for _ in range(max_len + 2):
+        def make_name(row):
+            if row['letters'] == 0:
+                return row['firstname']
+            suffix = row['lastname'][:int(row['letters'])]
+            return f"{row['firstname']} {suffix}." if suffix else row['firstname']
+
+        athletes['display_name'] = athletes.apply(make_name, axis=1)
+
+        dup_mask = athletes['display_name'].duplicated(keep=False)
+        if not dup_mask.any():
+            break
+
+        athletes.loc[dup_mask, 'letters'] += 1
+
+    return dict(zip(athletes['id_strava'], athletes['display_name']))
+
+
 def render_tab_regularity(texts):
     """
     Onglet Challenge Régularité :
@@ -29,12 +61,16 @@ def render_tab_regularity(texts):
     if res.data:
 
         df = pd.DataFrame(res.data)
-        
+
         # Conversion dates et calculs de base
         df['start_date'] = pd.to_datetime(df['start_date'])
         df['Month_Num'] = df['start_date'].dt.month
         # Astuce : On récupère le nom du mois (Janvier, Février...) selon la locale ou en anglais par défaut
-        df['Month_Name'] = df['start_date'].dt.month_name() 
+        df['Month_Name'] = df['start_date'].dt.month_name()
+
+        # Calcul des noms d'affichage uniques (prénom + initiale(s) du nom si doublon)
+        display_names_map = make_display_names(df)
+        df['display_name'] = df['id_strava'].map(display_names_map)
 
         # --- 3. ALGORITHME DE CALCUL DES POINTS ---
         all_monthly_scores = []
@@ -47,7 +83,7 @@ def render_tab_regularity(texts):
             df_m = df[df['Month_Num'] == m]
             
             # On groupe par athlète pour avoir KM et Points
-            rank_m = df_m.groupby(['id_strava', 'firstname', 'avatar_url'])['distance_km'].sum().reset_index()
+            rank_m = df_m.groupby(['id_strava', 'display_name', 'avatar_url'])['distance_km'].sum().reset_index()
             rank_m = rank_m.sort_values('distance_km', ascending=False).reset_index(drop=True)
             
             N = len(rank_m)
@@ -68,7 +104,7 @@ def render_tab_regularity(texts):
             df_scores = pd.concat(all_monthly_scores)
             
             # On somme les points par athlète pour le classement général
-            final_leaderboard = df_scores.groupby(['id_strava', 'firstname', 'avatar_url'])['points_month'].sum().reset_index()
+            final_leaderboard = df_scores.groupby(['id_strava', 'display_name', 'avatar_url'])['points_month'].sum().reset_index()
             final_leaderboard.rename(columns={'points_month': 'total_points'}, inplace=True)
             # Tri final par points décroissants
             final_leaderboard = final_leaderboard.sort_values('total_points', ascending=False).reset_index(drop=True)
@@ -88,7 +124,7 @@ def render_tab_regularity(texts):
                     st.image(avatar, width=50)
                 
                 with c2:
-                    st.markdown(f"**{rank_icon} {row['firstname']}**")
+                    st.markdown(f"**{rank_icon} {row['display_name']}**")
                     #if is_global_view:
                     st.caption(f"{row['total_points']} points")
                 with c3:
@@ -110,13 +146,13 @@ def render_tab_regularity(texts):
             # --- 5. VISUALISATION (GRAPHIQUE) ---
             chart = alt.Chart(final_leaderboard).mark_bar().encode(
                 x=alt.X('total_points:Q', title='Points cumulés'),
-                y=alt.Y('firstname:N', sort='-x', title='Athlète'),
+                y=alt.Y('display_name:N', sort='-x', title='Athlète'),
                 color=alt.Color(
-                    'total_points:Q', 
-                    legend=None, 
+                    'total_points:Q',
+                    legend=None,
                     scale=alt.Scale(range=["#5E5D5D", '#E62E2D'])),
                     #scale=alt.Scale(scheme='goldorange')),
-                tooltip=['firstname', 'total_points']
+                tooltip=['display_name', 'total_points']
             ).properties(height=max(400, len(final_leaderboard)*30))
             
             st.altair_chart(chart, use_container_width=True)
@@ -157,24 +193,24 @@ def render_tab_regularity(texts):
             
             # Création du Pivot Table : Lignes=Noms, Colonnes=Mois, Valeurs=Points
             pivot_df1 = df_scores.pivot_table(
-                index=['firstname'], 
-                columns='month_name', 
-                values='points_month', 
+                index=['display_name'],
+                columns='month_name',
+                values='points_month',
                 fill_value=0
             ).astype(int)
 
             # Pivot sur la colonne 'display_text' qu'on a créée plus haut
             pivot_df2 = df_scores.pivot_table(
-                index=['firstname'], 
-                columns='month_name', 
-                values='display_text', 
+                index=['display_name'],
+                columns='month_name',
+                values='display_text',
                 aggfunc='first',
                 fill_value="0 pts (0 km)"
             )
 
             # 1. Trier les lignes (Athlètes) selon le classement général
             # On utilise l'ordre de 'final_leaderboard'
-            ordered_names = final_leaderboard.set_index(['firstname']).index
+            ordered_names = final_leaderboard.set_index(['display_name']).index
             # On filtre pour ne garder que ceux présents (sécurité)
             existing_names = [n for n in ordered_names if n in pivot_df1.index]
             pivot_df1 = pivot_df1.reindex(existing_names)
@@ -232,7 +268,7 @@ def render_tab_regularity(texts):
 
             # On renomme pour l'affichage
             df_details = df_details.rename(columns={
-                'firstname': 'Athlète',
+                'display_name': 'Athlète',
                 'display_text': 'Résultat'
             })
 
