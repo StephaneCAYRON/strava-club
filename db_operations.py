@@ -191,13 +191,14 @@ def get_leaderboard_by_group(group_id):
         .limit(MAX_ROWS_FORSQL)\
         .execute() # On filtre directement 'Ride' ici pour alléger le transfert
 
+@st.cache_data(ttl=600)
 def get_athlete_summary(athlete_id):
     """Récupère le nombre total d'activités et les 30 plus récentes."""
     # 1. Compter le total
     # Si Supabase :
     count_res = supabase.table("activities").select("*", count="exact").eq("id_strava", athlete_id).execute()
     total_count = count_res.count if count_res else 0
-    
+
     # 2. Récupérer les N dernières
     activities_res = supabase.table("activities") \
         .select("*") \
@@ -228,6 +229,7 @@ def get_all_groups():
     """Récupère la liste de tous les groupes disponibles"""
     return supabase.table("groups").select("*").execute()
 
+@st.cache_data(ttl=600)
 def get_user_memberships(athlete_id):
     """Récupère les groupes auxquels l'utilisateur appartient (approuvé ou non)"""
     return supabase.table("group_members")\
