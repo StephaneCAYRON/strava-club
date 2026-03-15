@@ -134,20 +134,25 @@ def render_tab_advanced_stats(texts):
     # 5.2 STACKED BAR CHART
     with st.expander("📊 Cumul Annuel & Mensuel", expanded=False):
         metric_choice = st.segmented_control(
-            "Donnée à afficher (Axe Y)", 
-            options=["Distance (km)", "Dénivelé (m)", "Temps (heures)"],
+            "Donnée à afficher (Axe Y)",
+            options=["Distance (km)", "Dénivelé (m)", "Temps (heures)", "Nombre de sorties"],
             default="Distance (km)"
         )
-        
+
         if metric_choice == "Distance (km)":
             y_col = 'distance_km'
             tooltip_format = '.1f'
         elif metric_choice == "Dénivelé (m)":
             y_col = 'total_elevation_gain'
             tooltip_format = '.0f'
-        else:
+        elif metric_choice == "Temps (heures)":
             y_col = 'moving_time_hr'
             tooltip_format = '.1f'
+        else:
+            y_col = 'nb_sorties'
+            tooltip_format = '.0f'
+            df_filtered = df_filtered.copy()
+            df_filtered['nb_sorties'] = 1
 
         # Agrégation des données pour le graphique
         df_agg = df_filtered.groupby(['year', 'month', 'month_num'])[y_col].sum().reset_index()
@@ -176,6 +181,69 @@ def render_tab_advanced_stats(texts):
         ).properties(height=500).interactive()
         
         st.altair_chart(stacked_bar, use_container_width=True)
+
+        # Heatmap "Calendrier de la foi"
+        _MOIS_SHORT = {1:'Jan',2:'Fév',3:'Mar',4:'Avr',5:'Mai',6:'Juin',
+                       7:'Jul',8:'Aoû',9:'Sep',10:'Oct',11:'Nov',12:'Déc'}
+        df_heat = df_filtered.groupby(['year', 'month_num'])[y_col].sum().reset_index()
+        df_heat['year_str'] = df_heat['year'].astype(str)
+        df_heat['mois_nom'] = df_heat['month_num'].map(_MOIS_SHORT)
+
+        heatmap_foi = alt.Chart(df_heat).mark_rect(cornerRadius=4).encode(
+            x=alt.X('month_num:O', title=None,
+                    axis=alt.Axis(values=list(range(1, 13)),
+                                  labelExpr="{1:'Jan',2:'Fév',3:'Mar',4:'Avr',5:'Mai',6:'Juin',7:'Jul',8:'Aoû',9:'Sep',10:'Oct',11:'Nov',12:'Déc'}[datum.value]")),
+            y=alt.Y('year_str:N', title=None, sort='descending'),
+            color=alt.Color(f'{y_col}:Q',
+                            scale=alt.Scale(scheme='reds', zero=True),
+                            title=metric_choice),
+            tooltip=[
+                alt.Tooltip('mois_nom:N', title='Mois'),
+                alt.Tooltip('year_str:N', title='Année'),
+                alt.Tooltip(f'{y_col}:Q', title=metric_choice, format=tooltip_format),
+            ]
+        ).properties(height=max(120, len(df_heat['year_str'].unique()) * 35),
+                     title="🗓️ Calendrier de la foi")
+
+        text_foi = heatmap_foi.mark_text(fontSize=10).encode(
+            text=alt.Text(f'{y_col}:Q', format=tooltip_format),
+            color=alt.condition(
+                alt.datum[y_col] > df_heat[y_col].quantile(0.7),
+                alt.value('white'), alt.value('#555')
+            )
+        )
+        st.altair_chart((heatmap_foi + text_foi).configure_view(strokeWidth=0), use_container_width=True)
+
+        # Pie chart répartition par sport
+        df_pie = df_filtered.groupby('type')[y_col].sum().reset_index()
+        df_pie['pct'] = df_pie[y_col] / df_pie[y_col].sum() * 100
+        df_pie = df_pie.sort_values(y_col, ascending=False).reset_index(drop=True)
+
+        # Palette de N rouges du plus foncé au plus clair, samplée sur le scheme 'reds' (ColorBrewer)
+        _REDS = ['#67000d', '#a50f15', '#cb181d', '#ef3b2c', '#fb6a4a', '#fc9272', '#fcbba1', '#fee0d2', '#fff5f0']
+        n = len(df_pie)
+        if n == 1:
+            reds_range = [_REDS[0]]
+        else:
+            indices = [round(i * (len(_REDS) - 1) / (n - 1)) for i in range(n)]
+            reds_range = [_REDS[i] for i in indices]
+        sports_ordered = df_pie['type'].tolist()
+
+        base_pie = alt.Chart(df_pie).encode(
+            theta=alt.Theta(f'{y_col}:Q'),
+            color=alt.Color('type:N',
+                            scale=alt.Scale(domain=sports_ordered, range=reds_range),
+                            title='Sport'),
+            tooltip=[
+                alt.Tooltip('type:N', title='Sport'),
+                alt.Tooltip(f'{y_col}:Q', title=metric_choice, format=tooltip_format),
+                alt.Tooltip('pct:Q', title='%', format='.1f'),
+            ]
+        )
+
+        pie = base_pie.mark_arc(innerRadius=50)
+
+        st.altair_chart(pie.properties(height=280, title="🏅 Répartition par sport").configure_view(strokeWidth=0), use_container_width=True)
 
     # 5.1 SCATTER PLOT EPIC RIDES (Réutilisation de la fonction existante)
     with st.expander("🌌 Km / D+", expanded=False):
