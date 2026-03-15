@@ -18,7 +18,7 @@ def _lazy(module, func):
 # ---------------------------------------------------
 
 ADMIN_ID = 5251772
-VERSION = "v20260314.1605"
+VERSION = "v20260315.1231"
 
 st.set_page_config(
     page_title="Amicale Cyclo Escalquens",
