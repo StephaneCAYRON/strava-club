@@ -125,8 +125,11 @@ def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=
                 #   print(f"⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️DEBUG: Map vide pour {a['name']}")
 
                 # --- LOGIQUE CHALLENGE DIMANCHE ---
-                is_sunday_challenge = False
-                is_sunday_challenge = should_be_sunday_challenge(a)
+                is_sunday_challenge = should_be_sunday_challenge({
+                    "start_date": a.get("start_date", ""),
+                    "distance_km": a.get("distance", 0) / 1000,
+                    "summary_polyline": poly,
+                })
 
                 formatted_activities.append({
                     "id_activity": a["id"],
