@@ -44,6 +44,39 @@ def get_last_sync_time():
         return last_time.strftime("%d/%m/%Y à %H:%M")
     return "Inconnue"
 
+def is_passing_through_escalquens(poly_str):
+    """Vérifie si un point de la polyline est à < 3000m de la mairie."""
+    try:
+        points = polyline.decode(poly_str)
+        target = (43.5171, 1.5624)
+        for p in points:
+            if abs(p[0] - target[0]) < 0.03 and abs(p[1] - target[1]) < 0.03:
+                return True
+        return False
+    except:
+        return False
+
+
+def should_be_sunday_challenge(row):
+    """Reproduit exactement la logique de db_operations.save_athlete_data."""
+    try:
+        start_dt = datetime.datetime.fromisoformat(row["start_date"].replace("Z", "+00:00"))
+    except Exception:
+        return False
+
+    if start_dt.weekday() != 6:          # doit être dimanche
+        return False
+    local_hour = start_dt.hour + 1       # UTC+1 estimé (même logique que le code original)
+    if not (5 <= local_hour <= 10):
+        return False
+    if (row.get("distance_km") or 0) < 50:
+        return False
+    poly = row.get("summary_polyline")
+    if not poly:
+        return False
+    return is_passing_through_escalquens(poly)
+
+
 def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=False, is_from_ui=True):
     """Sauvegarde le profil et les activités dans Supabase."""
     try:
@@ -93,15 +126,7 @@ def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=
 
                 # --- LOGIQUE CHALLENGE DIMANCHE ---
                 is_sunday_challenge = False
-                start_dt = datetime.datetime.fromisoformat(a["start_date"].replace('Z', '+00:00'))
-                # Si Dimanche (6) entre 7h30 et 10h (UTC+1 estimé)
-                if start_dt.weekday() == 6:
-                    local_hour = start_dt.hour + 1
-                    if (5 <= local_hour <= 10):
-                        if (a.get('distance', 0) / 1000) >= 50:
-                            # On vérifie le passage à Escalquens (Mairie : 43.517, 1.562)
-                            if poly and is_passing_through_escalquens(poly):
-                                is_sunday_challenge = True
+                is_sunday_challenge = should_be_sunday_challenge(a)
 
                 formatted_activities.append({
                     "id_activity": a["id"],
@@ -121,18 +146,6 @@ def sync_profile_and_activities(athlete, activities, refresh_token,is_full_sync=
         return True
     except Exception as e:
         st.error(f"Erreur Supabase : {e}")
-        return False
-
-def is_passing_through_escalquens(poly_str):
-    """Vérifie si un point de la polyline est à < 3000m de la mairie."""
-    try:
-        points = polyline.decode(poly_str)
-        target = (43.5171, 1.5624)
-        for p in points:
-            if abs(p[0] - target[0]) < 0.03 and abs(p[1] - target[1]) < 0.03:
-                return True
-        return False
-    except:
         return False
     
 def get_leaderboard_data():
