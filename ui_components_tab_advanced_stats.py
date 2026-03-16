@@ -94,8 +94,12 @@ def render_tab_advanced_stats(texts):
     # Extraction des listes uniques pour les filtres
     all_years = sorted(df['year'].unique().tolist(), reverse=True)
     current_year = datetime.datetime.now().year
-    # Définition de l'année par défaut (Année en cours si présente, sinon la plus récente)
-    default_year = [current_year] if current_year in all_years else [all_years[0]]
+    # Définition de l'année par défaut (Année en cours + année -1 si présentes, sinon la plus récente)
+    prev_year = current_year - 1
+    if current_year in all_years:
+        default_year = [current_year, prev_year] if prev_year in all_years else [current_year]
+    else:
+        default_year = [all_years[0]]
 
     # Dictionnaire pour trier les mois correctement
     months_order = {
@@ -154,34 +158,6 @@ def render_tab_advanced_stats(texts):
             df_filtered = df_filtered.copy()
             df_filtered['nb_sorties'] = 1
 
-        # Agrégation des données pour le graphique
-        df_agg = df_filtered.groupby(['year', 'month', 'month_num'])[y_col].sum().reset_index()
-        
-        # Conversion de l'année en string pour éviter l'affichage de type "2,024"
-        df_agg['year'] = df_agg['year'].astype(str)
-        color_scale = alt.Scale(scheme='reds')
-        stacked_bar = alt.Chart(df_agg).mark_bar().encode(
-            x=alt.X('year:N', title='Année'),
-            y=alt.Y(f'{y_col}:Q', title=metric_choice),
-            # On utilise le mois pour la couleur, et on trie selon le numéro du mois (month_num)
-            # On utilise month:N pour la légende mais on scale sur month_num pour le dégradé
-            color=alt.Color(
-                'month:N', 
-                title='Mois', 
-                sort=alt.EncodingSortField(field='month_num', order='ascending'),
-                scale=color_scale
-            ),
-            # L'ASTUCE EST ICI : on force l'ordre d'empilement sur month_num
-            order=alt.Order('month_num:O', sort='ascending'),
-            tooltip=[
-                alt.Tooltip('year:N', title='Année'),
-                alt.Tooltip('month:N', title='Mois'),
-                alt.Tooltip(f'{y_col}:Q', title=metric_choice, format=tooltip_format)
-            ]
-        ).properties(height=500).interactive()
-        
-        st.altair_chart(stacked_bar, use_container_width=True)
-
         # Heatmap "Calendrier de la foi"
         _MOIS_SHORT = {1:'Jan',2:'Fév',3:'Mar',4:'Avr',5:'Mai',6:'Juin',
                        7:'Jul',8:'Aoû',9:'Sep',10:'Oct',11:'Nov',12:'Déc'}
@@ -196,7 +172,7 @@ def render_tab_advanced_stats(texts):
             y=alt.Y('year_str:N', title=None, sort='descending'),
             color=alt.Color(f'{y_col}:Q',
                             scale=alt.Scale(scheme='reds', zero=True),
-                            title=metric_choice),
+                            legend=None),
             tooltip=[
                 alt.Tooltip('mois_nom:N', title='Mois'),
                 alt.Tooltip('year_str:N', title='Année'),
@@ -213,6 +189,28 @@ def render_tab_advanced_stats(texts):
             )
         )
         st.altair_chart((heatmap_foi + text_foi).configure_view(strokeWidth=0), use_container_width=True)
+
+        # Stacked bar chart cumul annuel par mois
+        df_agg = df_filtered.groupby(['year', 'month', 'month_num'])[y_col].sum().reset_index()
+        df_agg['year'] = df_agg['year'].astype(str)
+        color_scale = alt.Scale(scheme='reds')
+        stacked_bar = alt.Chart(df_agg).mark_bar().encode(
+            x=alt.X('year:N', title='Année'),
+            y=alt.Y(f'{y_col}:Q', title=metric_choice),
+            color=alt.Color(
+                'month:N',
+                title='Mois',
+                sort=alt.EncodingSortField(field='month_num', order='ascending'),
+                scale=color_scale
+            ),
+            order=alt.Order('month_num:O', sort='ascending'),
+            tooltip=[
+                alt.Tooltip('year:N', title='Année'),
+                alt.Tooltip('month:N', title='Mois'),
+                alt.Tooltip(f'{y_col}:Q', title=metric_choice, format=tooltip_format)
+            ]
+        ).properties(height=500).interactive()
+        st.altair_chart(stacked_bar, use_container_width=True)
 
         # Pie chart répartition par sport
         df_pie = df_filtered.groupby('type')[y_col].sum().reset_index()

@@ -129,7 +129,7 @@ def is_passing_through_escalquens(poly_str):
         points = polyline.decode(poly_str)
         target = (43.5171, 1.5624)
         for p in points:
-            if abs(p[0] - target[0]) < 0.03 and abs(p[1] - target[1]) < 0.005:
+            if abs(p[0] - target[0]) < 0.03 and abs(p[1] - target[1]) < 0.03:
                 return True
         return False
     except:
