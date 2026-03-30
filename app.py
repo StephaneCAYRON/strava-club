@@ -69,12 +69,16 @@ if code and st.session_state.access_token is None:
 def login_page_button():
     left, center, right = st.columns([1,2,1])
     with center:
+        st.write("L'application a été migrée, utiliser le bouton ci-dessous SVP, connecter vous à la nouvelle APP (vos données arriveront après qqes minutes). A+, Stef)")
+        st.link_button("C'est par ici", "https://tribu-jade.vercel.app/register",use_container_width=True,type="primary")
+        """
         st.link_button(
             texts["connect"],
             get_strava_auth_url(),
             use_container_width=True,
             type="primary"
         )
+        """
     st.stop()
 
 if not st.session_state.access_token:
