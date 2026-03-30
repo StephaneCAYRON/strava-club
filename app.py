@@ -71,14 +71,7 @@ def login_page_button():
     with center:
         st.info("L'application a été migrée, utiliser le bouton ci-dessous SVP, connecter vous à la nouvelle APP (vos données arriveront après qqes minutes, et challenges en cours). Dslé, mais pbe de compte Strava, migration obligatoire. A+, Stef")
         st.link_button("Nouvelle app ici", "https://tribu-jade.vercel.app/register",use_container_width=True,type="primary")
-        """
-        st.link_button(
-            texts["connect"],
-            get_strava_auth_url(),
-            use_container_width=True,
-            type="primary"
-        )
-        """
+        
     st.stop()
 
 if not st.session_state.access_token:
